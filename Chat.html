@@ -1,6 +1,3 @@
-
-Copy
-
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -492,7 +489,7 @@ Copy
     const CHAT_API_URL = "https://ai-chat-backend-6.onrender.com/chat";
  
     // ─── Vekk serveren ved sidelast (Render free tier spinner) ───────────────
-    fetch(CHAT_API_URL.replace('/chat', '/')).catch(() => {});
+    fetch(CHAT_API_URL.replace('/chat', '/health')).catch(() => {});
  
     // ─── State ──────────────────────────────────────────────────────────────
     let history = []; // conversation history for multi-turn context
@@ -636,3 +633,4 @@ Copy
   </script>
 </body>
 </html>
+ 
