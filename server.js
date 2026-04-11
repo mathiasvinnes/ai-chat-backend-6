@@ -1,10 +1,6 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
- 
-import express from "express";
-import cors from "cors";
-import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from "url";
  
@@ -74,7 +70,7 @@ app.post("/chat", rateLimit, async (req, res) => {
     return res.status(400).json({ reply: "Meldingen er for lang (maks 500 tegn)." });
   }
   if (!OPENAI_API_KEY) {
-    console.error("❌ OPENAI_API_KEY er ikke satt.");
+    console.error("[FEIL] OPENAI_API_KEY er ikke satt.");
     return res.status(500).json({ reply: "Konfigurasjonsfeil på server." });
   }
  
@@ -117,19 +113,19 @@ app.post("/chat", rateLimit, async (req, res) => {
  
     if (!openaiRes.ok) {
       const errBody = await openaiRes.json().catch(() => ({}));
-      console.error("❌ OpenAI API-feil:", openaiRes.status, errBody);
+      console.error("[FEIL] OpenAI API-feil:", openaiRes.status, errBody);
       return res.status(502).json({ reply: "Kunne ikke nå AI-tjenesten. Prøv igjen." });
     }
  
     const data = await openaiRes.json();
     const reply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
  
-    console.log(`💬 [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" → "${reply}"`);
+    console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}"`);
  
     return res.json({ reply });
  
   } catch (error) {
-    console.error("❌ Nettverksfeil mot OpenAI:", error.message);
+    console.error("[FEIL] Nettverksfeil mot OpenAI:", error.message);
     return res.status(500).json({ reply: "Serverfeil. Prøv igjen senere." });
   }
 });
@@ -142,5 +138,7 @@ app.use((_req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
  
 app.listen(PORT, () => {
-  console.log(`🚀 Server kjører på port ${PORT}`);
+  console.log(`[SERVER] Kjorer pa port ${PORT}`);
+});
+ rer på port ${PORT}`);
 });
