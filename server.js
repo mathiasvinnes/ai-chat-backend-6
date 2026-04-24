@@ -3,8 +3,48 @@ import cors from "cors";
 import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readFileSync } from "fs";
  
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ 
+// ── Les konfigurasjon ─────────────────────────────────────────────────────────
+ 
+const CONFIG = JSON.parse(readFileSync(path.join(__dirname, "config.json"), "utf-8"));
+ 
+function byggSystemPrompt(config) {
+  const priser = config.priser?.join("\n  - ") || "Kontakt salongen for priser";
+  const tjenester = config.tjenester?.join(", ") || "";
+  const apningstider = Object.entries(config.apningstider || {})
+    .map(([dag, tid]) => `  ${dag}: ${tid}`)
+    .join("\n");
+ 
+  return `Du er en ${config.tone || "vennlig og profesjonell"} kundeserviceassistent for ${config.bedrift}, en ${config.bransje}.
+ 
+Retningslinjer:
+- Svar alltid pa ${config.sprakOgLand || "norsk"}, kort og konkret (maks 3 setninger).
+- Var varm og imotekommende - bruk kundens navn hvis du kjenner det.
+- Inviter alltid kunden til a booke time nar det er naturlig.
+- Hvis sporsmalet ikke er relevant for ${config.bransje}, avvis hoflig og hold deg til temaet.
+- Ikke spekuker om tjenester du ikke kjenner til - be kunden kontakte oss.
+ 
+Informasjon om ${config.bedrift}:
+- Adresse: ${config.adresse || "Ikke oppgitt"}
+- Telefon: ${config.telefon || "Ikke oppgitt"}
+- E-post: ${config.epost || "Ikke oppgitt"}
+- Bookinglink: ${config.bookinglink || "Kontakt oss for booking"}
+ 
+Tjenester: ${tjenester}
+ 
+Priser:
+  - ${priser}
+ 
+Apningstider:
+${apningstider}`;
+}
+ 
+const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
+ 
+// ── App ───────────────────────────────────────────────────────────────────────
  
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,9 +53,9 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 // ── Middleware ────────────────────────────────────────────────────────────────
  
 app.use(cors({ origin: "*" }));
-app.use(express.json({ limit: "10kb" })); // Prevent oversized payloads
+app.use(express.json({ limit: "10kb" }));
  
-// Simple in-memory rate limiter (per IP, max 20 req/min)
+// Enkel rate limiter (maks 20 req/min per IP)
 const rateLimitMap = new Map();
 function rateLimit(req, res, next) {
   const ip = req.ip;
@@ -33,21 +73,10 @@ function rateLimit(req, res, next) {
   rateLimitMap.set(ip, entry);
  
   if (entry.count > maxRequests) {
-    return res.status(429).json({ reply: "For mange forespørsler. Prøv igjen om litt." });
+    return res.status(429).json({ reply: "For mange foresporsler. Prov igjen om litt." });
   }
   next();
 }
- 
-// ── System prompt ─────────────────────────────────────────────────────────────
- 
-const SYSTEM_PROMPT = `Du er en profesjonell og vennlig kundeserviceassistent for en frisørsalong.
- 
-Retningslinjer:
-- Svar alltid på norsk, kort og konkret (maks 3 setninger).
-- Vær varm og imøtekommende – bruk kundens navn hvis du kjenner det.
-- Inviter alltid kunden til å booke time når det er naturlig.
-- Hvis spørsmålet ikke er relevant for salongen, avvis høflig og hold deg til temaet.
-- Ikke spekuler om priser eller tjenester du ikke kjenner til – be kunden kontakte salongen.`;
  
 // ── Routes ────────────────────────────────────────────────────────────────────
  
@@ -60,13 +89,13 @@ app.get("/widget.js", (_req, res) => {
 });
  
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", message: "AI chat backend kjorer" });
+  res.json({ status: "ok", bedrift: CONFIG.bedrift });
 });
  
 app.post("/chat", rateLimit, async (req, res) => {
   const { message, name, history = [] } = req.body;
  
-  // --- Validation ---
+  // Validering
   if (!message || typeof message !== "string") {
     return res.status(400).json({ reply: "Melding mangler eller er ugyldig." });
   }
@@ -75,21 +104,20 @@ app.post("/chat", rateLimit, async (req, res) => {
   }
   if (!OPENAI_API_KEY) {
     console.error("[FEIL] OPENAI_API_KEY er ikke satt.");
-    return res.status(500).json({ reply: "Konfigurasjonsfeil på server." });
+    return res.status(500).json({ reply: "Konfigurasjonsfeil pa server." });
   }
  
-  // --- Build conversation messages ---
+  // Bygg meldinger
   const safeName = name && typeof name === "string" ? name.slice(0, 50) : null;
   const systemContent = safeName
     ? `${SYSTEM_PROMPT}\n\nKundens navn: ${safeName}`
     : SYSTEM_PROMPT;
  
-  // Support optional conversation history for multi-turn chat
   const allowedRoles = new Set(["user", "assistant"]);
   const safeHistory = Array.isArray(history)
     ? history
         .filter(m => allowedRoles.has(m?.role) && typeof m?.content === "string")
-        .slice(-10) // keep last 10 turns max
+        .slice(-10)
         .map(m => ({ role: m.role, content: m.content.slice(0, 500) }))
     : [];
  
@@ -99,7 +127,7 @@ app.post("/chat", rateLimit, async (req, res) => {
     { role: "user", content: message.trim() },
   ];
  
-  // --- Call OpenAI chat completions ---
+  // Kall OpenAI
   try {
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -118,7 +146,7 @@ app.post("/chat", rateLimit, async (req, res) => {
     if (!openaiRes.ok) {
       const errBody = await openaiRes.json().catch(() => ({}));
       console.error("[FEIL] OpenAI API-feil:", openaiRes.status, errBody);
-      return res.status(502).json({ reply: "Kunne ikke nå AI-tjenesten. Prøv igjen." });
+      return res.status(502).json({ reply: "Kunne ikke na AI-tjenesten. Prov igjen." });
     }
  
     const data = await openaiRes.json();
@@ -130,7 +158,7 @@ app.post("/chat", rateLimit, async (req, res) => {
  
   } catch (error) {
     console.error("[FEIL] Nettverksfeil mot OpenAI:", error.message);
-    return res.status(500).json({ reply: "Serverfeil. Prøv igjen senere." });
+    return res.status(500).json({ reply: "Serverfeil. Prov igjen senere." });
   }
 });
  
@@ -142,6 +170,6 @@ app.use((_req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
  
 app.listen(PORT, () => {
-  console.log(`[SERVER] Kjorer pa port ${PORT}`);
+  console.log(`[SERVER] ${CONFIG.bedrift} kjorer pa port ${PORT}`);
 });
  
