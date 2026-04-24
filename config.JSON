@@ -1,0 +1,34 @@
+{
+  "bedrift": "Studio Klipp",
+  "bransje": "frisørsalong",
+  "velkomst": "Hei! Jeg er den automatiske assistenten til Studio Klipp. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!",
+  "priser": [
+    "Herreklipp: 350 kr",
+    "Dameklipp: 550 kr",
+    "Skjegg: 200 kr",
+    "Farge (kort hår): 800 kr",
+    "Farge (langt hår): 1200 kr"
+  ],
+  "tjenester": [
+    "Klipp",
+    "Farge",
+    "Skjegg",
+    "Behandling",
+    "Styling"
+  ],
+  "apningstider": {
+    "Mandag": "10:00 - 18:00",
+    "Tirsdag": "10:00 - 18:00",
+    "Onsdag": "10:00 - 18:00",
+    "Torsdag": "10:00 - 20:00",
+    "Fredag": "10:00 - 18:00",
+    "Lordag": "10:00 - 15:00",
+    "Sondag": "Stengt"
+  },
+  "bookinglink": "https://timma.no/studio-klipp",
+  "telefon": "+47 123 45 678",
+  "adresse": "Storgata 1, 0123 Oslo",
+  "epost": "hei@studioklipp.no",
+  "tone": "vennlig og profesjonell",
+  "sprakOgLand": "norsk"
+}
