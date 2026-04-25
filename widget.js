@@ -133,6 +133,20 @@
     "#sk-send:active { transform: scale(0.93); }",
     "#sk-send:disabled { opacity: 0.4; cursor: not-allowed; }",
  
+    "#sk-book-btn-style { display: none }",
+    ".sk-book-btn {",
+    "  display: inline-block;",
+    "  background: " + CONFIG.aksentFarge + ";",
+    "  color: #fff;",
+    "  font-family: 'DM Sans', sans-serif;",
+    "  font-size: 13px; font-weight: 600;",
+    "  padding: 10px 20px;",
+    "  border-radius: 999px;",
+    "  text-decoration: none;",
+    "  transition: opacity 0.15s;",
+    "  animation: sk-fadeup 0.2s ease both;",
+    "}",
+    ".sk-book-btn:hover { opacity: 0.85; }",
     "@media (max-width: 420px) {",
     "  #sk-panel { width: calc(100vw - 24px); right: 12px; bottom: 88px; }",
     "  #sk-bubble { right: 12px; bottom: 12px; }",
@@ -213,6 +227,24 @@
     messages.scrollTop = messages.scrollHeight;
   }
  
+ 
+  function addBookingButton(url) {
+    var row = document.createElement("div");
+    row.className = "sk-row";
+    row.style.paddingLeft = "38px";
+ 
+    var btn = document.createElement("a");
+    btn.href = url;
+    btn.target = "_blank";
+    btn.rel = "noopener noreferrer";
+    btn.className = "sk-book-btn";
+    btn.textContent = "Book time";
+ 
+    row.appendChild(btn);
+    messages.appendChild(row);
+    messages.scrollTop = messages.scrollHeight;
+  }
+ 
   function showTyping() {
     var row = document.createElement("div");
     row.className = "sk-row"; row.id = "sk-typing-row";
@@ -289,6 +321,7 @@
       var data  = await res.json();
       var reply = data.reply || "Beklager, noe gikk galt.";
       addMessage("bot", reply);
+      if (data.bookingUrl) addBookingButton(data.bookingUrl);
       history.push({ role: "assistant", content: reply });
       if (history.length > 20) history = history.slice(-20);
  
@@ -308,4 +341,5 @@
   input.addEventListener("input", autoResize);
  
 })();
+ })();
  
