@@ -8,17 +8,17 @@
     farge:       "#0d0d0d",      // hovedfarge (boble og header)
     aksentFarge: "#b8924a",      // gullaksent
   };
- 
+
   // ── Vekk serveren ──────────────────────────────────────────────────────────
   fetch(CONFIG.healthUrl).catch(function () {});
- 
+
   // ── CSS ───────────────────────────────────────────────────────────────────
   var style = document.createElement("style");
   style.textContent = [
     "@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap');",
- 
+
     "#sk-widget-wrap * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; }",
- 
+
     /* Boble-knapp */
     "#sk-bubble {",
     "  position: fixed; bottom: 24px; right: 24px; z-index: 99998;",
@@ -34,7 +34,7 @@
     "#sk-bubble.open .sk-icon-chat { opacity: 0; transform: scale(0.5); position: absolute; }",
     "#sk-bubble.open .sk-icon-close { opacity: 1; transform: scale(1); }",
     "#sk-bubble .sk-icon-close { opacity: 0; transform: scale(0.5); position: absolute; }",
- 
+
     /* Varselpunkt */
     "#sk-badge {",
     "  position: absolute; top: -2px; right: -2px;",
@@ -43,7 +43,7 @@
     "  animation: sk-pop 0.3s ease both;",
     "}",
     "@keyframes sk-pop { from { transform: scale(0); } to { transform: scale(1); } }",
- 
+
     /* Chat-panel */
     "#sk-panel {",
     "  position: fixed; bottom: 96px; right: 24px; z-index: 99999;",
@@ -57,7 +57,7 @@
     "  transform-origin: bottom right;",
     "}",
     "#sk-panel.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: all; }",
- 
+
     /* Header */
     "#sk-header {",
     "  background: " + CONFIG.farge + ";",
@@ -76,7 +76,7 @@
     "#sk-live { margin-left: auto; display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7); font-size: 11px; }",
     "#sk-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: sk-pulse 2s infinite; }",
     "@keyframes sk-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }",
- 
+
     /* Meldinger */
     "#sk-messages {",
     "  flex: 1; overflow-y: auto; padding: 16px 14px;",
@@ -85,24 +85,24 @@
     "}",
     "#sk-messages::-webkit-scrollbar { width: 3px; }",
     "#sk-messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }",
- 
+
     ".sk-row { display: flex; gap: 8px; align-items: flex-end; animation: sk-fadeup 0.2s ease both; }",
     ".sk-row.user { flex-direction: row-reverse; }",
     "@keyframes sk-fadeup { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }",
- 
+
     ".sk-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;",
     "  display: flex; align-items: center; justify-content: center;",
     "  font-size: 10px; font-weight: 700; }",
     ".sk-av.bot { background: " + CONFIG.farge + "; color: " + CONFIG.aksentFarge + "; }",
     ".sk-av.user { background: #e2ddd6; color: #333; }",
- 
+
     ".sk-bubble-msg { max-width: 78%; padding: 10px 13px; font-size: 13.5px; line-height: 1.55;",
     "  white-space: pre-wrap; word-break: break-word; }",
     ".sk-bubble-msg.bot { background: #fff; border: 1px solid #e8e2d9;",
     "  border-radius: 14px 14px 14px 4px; color: #1a1a1a; }",
     ".sk-bubble-msg.user { background: " + CONFIG.farge + "; color: #fff;",
     "  border-radius: 14px 14px 4px 14px; }",
- 
+
     /* Typing */
     ".sk-typing { display: flex; gap: 5px; align-items: center; padding: 12px 14px;",
     "  background: #fff; border: 1px solid #e8e2d9; border-radius: 14px 14px 14px 4px; }",
@@ -111,7 +111,7 @@
     ".sk-typing span:nth-child(2){animation-delay:0.2s}",
     ".sk-typing span:nth-child(3){animation-delay:0.4s}",
     "@keyframes sk-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }",
- 
+
     /* Composer */
     "#sk-composer { background: #fff; border-top: 1px solid #ede8df; padding: 12px; display: flex; gap: 8px; align-items: flex-end; }",
     "#sk-input {",
@@ -132,7 +132,7 @@
     "#sk-send:hover { background: #2a2a2a; }",
     "#sk-send:active { transform: scale(0.93); }",
     "#sk-send:disabled { opacity: 0.4; cursor: not-allowed; }",
- 
+
     ".sk-book-btn {",
     "  display: inline-block;",
     "  background: " + CONFIG.aksentFarge + ";",
@@ -155,7 +155,7 @@
     "}",
   ].join("\n");
   document.head.appendChild(style);
- 
+
   // ── HTML ──────────────────────────────────────────────────────────────────
   var wrap = document.createElement("div");
   wrap.id = "sk-widget-wrap";
@@ -181,7 +181,7 @@
     '    </button>',
     '  </div>',
     '</div>',
- 
+
     /* Boble */
     '<button id="sk-bubble" aria-label="Aapne chat">',
     '  <span id="sk-badge" style="display:none"></span>',
@@ -194,13 +194,13 @@
     '</button>',
   ].join("");
   document.body.appendChild(wrap);
- 
+
   // ── State ─────────────────────────────────────────────────────────────────
   var isOpen    = false;
   var isLocked  = false;
   var history   = [];
   var welcomed  = false;
- 
+
   // ── Referanser ────────────────────────────────────────────────────────────
   var panel    = document.getElementById("sk-panel");
   var bubble   = document.getElementById("sk-bubble");
@@ -208,45 +208,47 @@
   var messages = document.getElementById("sk-messages");
   var input    = document.getElementById("sk-input");
   var sendBtn  = document.getElementById("sk-send");
- 
+
   // ── Hjelpere ──────────────────────────────────────────────────────────────
   function addMessage(role, text) {
     var row = document.createElement("div");
     row.className = "sk-row " + role;
- 
+
     var av = document.createElement("div");
     av.className = "sk-av " + role;
     av.textContent = role === "user" ? "Deg" : "SK";
- 
+
     var bbl = document.createElement("div");
     bbl.className = "sk-bubble-msg " + role;
     bbl.textContent = text;
- 
+
     if (role === "user") { row.appendChild(bbl); row.appendChild(av); }
     else                 { row.appendChild(av);  row.appendChild(bbl); }
- 
+
     messages.appendChild(row);
     messages.scrollTop = messages.scrollHeight;
   }
- 
- 
+
+
   function addBookingButton(url) {
     var row = document.createElement("div");
     row.className = "sk-row";
     row.style.paddingLeft = "38px";
- 
+
     var btn = document.createElement("a");
     btn.href = url;
     btn.target = "_blank";
     btn.rel = "noopener noreferrer";
     btn.className = "sk-book-btn";
     btn.textContent = "Book time";
- 
+
     row.appendChild(btn);
     messages.appendChild(row);
-    messages.scrollTop = messages.scrollHeight;
+    setTimeout(function() {
+      messages.scrollTop = messages.scrollHeight;
+    }, 50);
   }
- 
+
   function showTyping() {
     var row = document.createElement("div");
     row.className = "sk-row"; row.id = "sk-typing-row";
@@ -259,74 +261,74 @@
     messages.appendChild(row);
     messages.scrollTop = messages.scrollHeight;
   }
- 
+
   function removeTyping() {
     var t = document.getElementById("sk-typing-row");
     if (t) t.remove();
   }
- 
+
   function setLocked(v) {
     isLocked = v;
     sendBtn.disabled = v;
     input.readOnly = v;
   }
- 
+
   function autoResize() {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 100) + "px";
   }
- 
+
   // ── Toggle panel ──────────────────────────────────────────────────────────
   function togglePanel() {
     isOpen = !isOpen;
     panel.classList.toggle("open", isOpen);
     bubble.classList.toggle("open", isOpen);
     badge.style.display = "none";
- 
+
     if (isOpen && !welcomed) {
       welcomed = true;
       setTimeout(function () { addMessage("bot", CONFIG.velkomst); }, 300);
     }
     if (isOpen) setTimeout(function () { input.focus(); }, 300);
   }
- 
+
   bubble.addEventListener("click", togglePanel);
- 
+
   // Vis varselpunkt etter 4 sek
   setTimeout(function () {
     if (!isOpen) badge.style.display = "block";
   }, 4000);
- 
+
   // ── Send melding ──────────────────────────────────────────────────────────
   async function send() {
     var text = input.value.trim();
     if (!text || isLocked) return;
- 
+
     addMessage("user", text);
     history.push({ role: "user", content: text });
     input.value = "";
     input.style.height = "auto";
     setLocked(true);
     showTyping();
- 
+
     try {
       var res = await fetch(CONFIG.apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, history: history })
       });
- 
+
       removeTyping();
- 
+
       if (!res.ok) throw new Error("HTTP " + res.status);
- 
+
       var data  = await res.json();
       var reply = data.reply || "Beklager, noe gikk galt.";
       addMessage("bot", reply);
       if (data.bookingUrl) addBookingButton(data.bookingUrl);
       history.push({ role: "assistant", content: reply });
       if (history.length > 20) history = history.slice(-20);
- 
+
     } catch (err) {
       removeTyping();
       addMessage("bot", "Kunne ikke na serveren. Provigjen senere.");
@@ -335,12 +337,11 @@
       input.focus();
     }
   }
- 
+
   sendBtn.addEventListener("click", send);
   input.addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   });
   input.addEventListener("input", autoResize);
- 
+
 })();
- 
