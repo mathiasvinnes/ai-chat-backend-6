@@ -133,20 +133,22 @@
     "#sk-send:active { transform: scale(0.93); }",
     "#sk-send:disabled { opacity: 0.4; cursor: not-allowed; }",
  
-    "#sk-book-btn-style { display: none }",
     ".sk-book-btn {",
     "  display: inline-block;",
     "  background: " + CONFIG.aksentFarge + ";",
-    "  color: #fff;",
+    "  color: #fff !important;",
     "  font-family: 'DM Sans', sans-serif;",
-    "  font-size: 13px; font-weight: 600;",
-    "  padding: 10px 20px;",
+    "  font-size: 13.5px; font-weight: 600;",
+    "  padding: 11px 24px;",
     "  border-radius: 999px;",
     "  text-decoration: none;",
-    "  transition: opacity 0.15s;",
+    "  cursor: pointer;",
+    "  transition: opacity 0.15s, transform 0.1s;",
     "  animation: sk-fadeup 0.2s ease both;",
+    "  margin-top: 4px;",
+    "  box-shadow: 0 4px 14px rgba(0,0,0,0.15);",
     "}",
-    ".sk-book-btn:hover { opacity: 0.85; }",
+    ".sk-book-btn:hover { opacity: 0.88; transform: translateY(-1px); }",
     "@media (max-width: 420px) {",
     "  #sk-panel { width: calc(100vw - 24px); right: 12px; bottom: 88px; }",
     "  #sk-bubble { right: 12px; bottom: 12px; }",
@@ -341,5 +343,4 @@
   input.addEventListener("input", autoResize);
  
 })();
- })();
  
