@@ -25,13 +25,13 @@ Retningslinjer:
 - Var varm og imotekommende - bruk kundens navn hvis du kjenner det.
 - Inviter alltid kunden til a booke time nar det er naturlig.
 - Hvis sporsmalet ikke er relevant for ${config.bransje}, avvis hoflig og hold deg til temaet.
-- Ikke spekuker om tjenester du ikke kjenner til - be kunden kontakte oss.
+- Ikke spekuler om tjenester du ikke kjenner til - be kunden kontakte oss.
+- Nar kunden spor om booking, ledig tid, eller vil bestille time: avslutt svaret med [BOOK] pa en egen linje.
  
 Informasjon om ${config.bedrift}:
 - Adresse: ${config.adresse || "Ikke oppgitt"}
 - Telefon: ${config.telefon || "Ikke oppgitt"}
 - E-post: ${config.epost || "Ikke oppgitt"}
-- Bookinglink: ${config.bookinglink || "Kontakt oss for booking"}
  
 Tjenester: ${tjenester}
  
@@ -150,11 +150,16 @@ app.post("/chat", rateLimit, async (req, res) => {
     }
  
     const data = await openaiRes.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
+    const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
  
-    console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}"`);
+    // Sjekk om AI vil vise bookingknapp
+    const showBook = rawReply.includes("[BOOK]");
+    const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
+    const bookingUrl = showBook ? (CONFIG.bookinglink || null) : null;
  
-    return res.json({ reply });
+    console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" ${showBook ? "[BOOK]" : ""}`);
+ 
+    return res.json({ reply, bookingUrl });
  
   } catch (error) {
     console.error("[FEIL] Nettverksfeil mot OpenAI:", error.message);
