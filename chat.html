@@ -528,6 +528,36 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
  
+    function addBookingButton(url) {
+      const row = document.createElement('div');
+      row.className = 'message-row';
+      row.style.paddingLeft = '44px';
+ 
+      const btn = document.createElement('a');
+      btn.href = url;
+      btn.target = '_blank';
+      btn.rel = 'noopener noreferrer';
+      btn.textContent = 'Book time';
+      btn.style.cssText = [
+        'display:inline-block',
+        'background:#b8924a',
+        'color:#fff',
+        'font-family:inherit',
+        'font-size:14px',
+        'font-weight:600',
+        'padding:11px 26px',
+        'border-radius:999px',
+        'text-decoration:none',
+        'box-shadow:0 4px 14px rgba(0,0,0,0.15)',
+        'transition:opacity 0.15s'
+      ].join(';');
+ 
+      row.appendChild(btn);
+      messagesEl.appendChild(row);
+      setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 50);
+      setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 150);
+    }
+ 
     function showTyping() {
       const row = document.createElement('div');
       row.className = 'typing-row';
@@ -590,6 +620,7 @@
         const reply = data.reply || 'Ingen respons mottatt.';
  
         addMessage('bot', reply);
+        if (data.bookingUrl) addBookingButton(data.bookingUrl);
         history.push({ role: 'assistant', content: reply });
  
         // Trim history to last 20 messages
