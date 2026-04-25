@@ -26,10 +26,11 @@ Retningslinjer:
 - Hvis sporsmalet ikke er relevant for ${config.bransje}, avvis hoflig og hold deg til temaet.
 - Ikke spekuler om tjenester du ikke kjenner til - be kunden kontakte oss.
 - Du KAN IKKE booke timer selv. Du har ikke tilgang til kalenderen og kan ikke bekrefte eller reservere tider.
-- Nar kunden spor om booking, ledig tid, eller vil bestille time: svar kort og avslutt ALLTID med [BOOK] pa en helt egen linje.
-- Eksempel korrekt: "Selvfolgelig! Du kan booke via lenken under.\n[BOOK]"
-- Skriv ALDRI at du har booket, reservert eller bekreftet en time - det er ikke mulig.
-- Nevn IKKE en "lenke under" uten at du ogsa skriver [BOOK] pa neste linje.
+- Nar kunden spor om booking, ledig tid, eller vil bestille time: avslutt ALLTID svaret med [BOOK] pa en helt egen linje. Dette viser en klikkbar bookingknapp.
+- Eksempel: "Selvfolgelig! Trykk pa knappen under for a booke.\n[BOOK]"
+- Du KAN vise bookingknappen - det er den eneste maten a booke pa. Si gjerne "trykk pa knappen under".
+- Skriv ALDRI at du har booket eller bekreftet en time direkte - kunden ma klikke knappen selv.
+- Skriv ALDRI at du ikke kan gi en lenke - du kan alltid vise bookingknappen med [BOOK].
 
 Informasjon om ${config.bedrift}:
 - Adresse: ${config.adresse || "Ikke oppgitt"}
@@ -155,10 +156,12 @@ app.post("/chat", rateLimit, async (req, res) => {
     const data = await openaiRes.json();
     const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
 
-    // Sjekk om AI vil vise bookingknapp
+    // Vis bookingknapp hvis AI brukte [BOOK] ELLER hvis brukerens melding handler om booking
     const hasBookTag = rawReply.includes("[BOOK]");
+    const bookingKeywords = ["book", "bestill", "time", "ledig", "reserv", "plass", "time", "avtale", "nar kan", "naar kan", "naar", "when"];
+    const userWantsBooking = bookingKeywords.some(kw => message.toLowerCase().includes(kw));
     const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
-    const bookingUrl = hasBookTag ? (CONFIG.bookinglink || null) : null;
+    const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
 
     console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" ${hasBookTag ? "[BOOK]" : ""}`);
 
