@@ -244,9 +244,10 @@
 
     row.appendChild(btn);
     messages.appendChild(row);
-    setTimeout(function() {
-      messages.scrollTop = messages.scrollHeight;
-    }, 50);
+    // Scroll multiple times to ensure button is always visible
+    messages.scrollTop = messages.scrollHeight;
+    setTimeout(function() { messages.scrollTop = messages.scrollHeight; }, 50);
+    setTimeout(function() { messages.scrollTop = messages.scrollHeight; }, 150);
   }
 
   function showTyping() {
