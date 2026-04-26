@@ -80,7 +80,7 @@ const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 
 const SENDGRID_KEY  = process.env.SENDGRID_KEY;
 const EPOST_FRA     = "mathias.s.vinnes@gmail.com";
-const EPOST_TIL     = "mathiasvinnes@gmail.com";
+const EPOST_TIL     = "asiakimchi25@gmail.com";
 
 async function sendBookingVarsel({ navn, melding }) {
   if (!SENDGRID_KEY) return;
