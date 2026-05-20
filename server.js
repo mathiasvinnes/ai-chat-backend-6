@@ -28,6 +28,7 @@ async function loggSamtale({ navn, melding, svar, bookingVist }) {
         "Prefer": "return=minimal"
       },
       body: JSON.stringify({
+        bedrift: CONFIG.bedrift,
         navn: navn || "Ukjent",
         melding,
         svar,
@@ -162,6 +163,14 @@ app.get("/", (_req, res) => {
 
 app.get("/widget.js", (_req, res) => {
   res.sendFile(path.join(__dirname, "widget.js"));
+});
+
+app.get("/dashboard", (_req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
+app.get("/dashboard", (_req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 app.get("/health", (_req, res) => {
