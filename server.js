@@ -297,6 +297,27 @@ app.post("/dashboard-data", async (req, res) => {
   return res.json({ bedrift: kunde.bedrift, samtaler });
 });
 
+// Slett samtale
+app.delete("/slett-samtale", async (req, res) => {
+  const { id, nokkel } = req.body;
+  if (!id || !nokkel) return res.status(400).json({ error: "Mangler id eller nokkel." });
+
+  // Verifiser nokkel
+  const kundeRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=bedrift`, {
+    headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` }
+  });
+  const kunder = await kundeRes.json();
+  if (!kunder.length) return res.status(401).json({ error: "Ugyldig nokkel." });
+
+  // Slett samtalen
+  await fetch(`${process.env.SUPABASE_URL}/rest/v1/samtaler?id=eq.${id}`, {
+    method: "DELETE",
+    headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` }
+  });
+
+  return res.json({ ok: true });
+});
+
 // 404 fallback
 app.use((_req, res) => {
   res.status(404).json({ error: "Endepunkt ikke funnet." });
