@@ -267,6 +267,36 @@ app.post("/chat", rateLimit, async (req, res) => {
   }
 });
 
+// Dashboard data endpoint
+app.post("/dashboard-data", async (req, res) => {
+  const { nokkel } = req.body;
+  if (!nokkel) return res.status(400).json({ error: "Nokkel mangler." });
+
+  // Hent kunde basert på nokkel
+  const kundeRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=*`, {
+    headers: {
+      "apikey": process.env.SUPABASE_KEY,
+      "Authorization": `Bearer ${process.env.SUPABASE_KEY}`
+    }
+  });
+
+  const kunder = await kundeRes.json();
+  if (!kunder.length) return res.status(401).json({ error: "Feil nokkel." });
+
+  const kunde = kunder[0];
+
+  // Hent samtaler for denne bedriften
+  const samtaleRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/samtaler?bedrift=eq.${encodeURIComponent(kunde.bedrift)}&order=opprettet.desc&select=*`, {
+    headers: {
+      "apikey": process.env.SUPABASE_KEY,
+      "Authorization": `Bearer ${process.env.SUPABASE_KEY}`
+    }
+  });
+
+  const samtaler = await samtaleRes.json();
+  return res.json({ bedrift: kunde.bedrift, samtaler });
+});
+
 // 404 fallback
 app.use((_req, res) => {
   res.status(404).json({ error: "Endepunkt ikke funnet." });
