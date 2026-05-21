@@ -204,6 +204,16 @@
 
     let alleRader = [];
 
+    // Sjekk session ved oppstart
+    sb.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        await visDashboard(data.session.user);
+      } else {
+        loginScreen.style.display = "flex";
+        dashScreen.style.display = "none";
+      }
+    });
+
     sb.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         await visDashboard(session.user);
