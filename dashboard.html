@@ -6,7 +6,7 @@
   <title>Dashboard – AI-assistent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --ink: #0d0d0d;
@@ -189,8 +189,7 @@
     const SUPABASE_URL = "https://wdkbgkcyaxphbampqoek.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_5yIjNxZUhEbohNuZqG5FXQ_3Q85svjp";
 
-    const { createClient } = supabase;
-    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const loginScreen   = document.getElementById("login-screen");
     const dashScreen    = document.getElementById("dashboard-screen");
