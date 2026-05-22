@@ -295,7 +295,9 @@ app.post("/chat", rateLimit, async (req, res) => {
     // Hent ledige tider fra Calendly hvis booking-relatert
     let ledigeTider = null;
     if (hasBookTag || userWantsBooking) {
+      console.log("[CALENDLY] Henter ledige tider...");
       ledigeTider = await hentLedigeTider();
+      console.log("[CALENDLY] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
     }
 
     const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
