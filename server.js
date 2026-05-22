@@ -86,12 +86,20 @@ async function hentLedigeTider() {
   if (!CALENDLY_TOKEN) return null;
   try {
     // Hent event type URI
-    const etRes = await fetch("https://api.calendly.com/event_types?count=10", {
-      headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}`, "Content-Type": "application/json" }
+    const etRes = await fetch("https://api.calendly.com/users/me", {
+      headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` }
     });
-    const etData = await etRes.json();
-    const eventType = etData.collection?.find(e => e.scheduling_url === CALENDLY_EVENT_URL || e.slug === "harklipp");
-    if (!eventType) return null;
+    const meData = await etRes.json();
+    const userUri = meData.resource?.uri;
+    if (!userUri) { console.error("[CALENDLY] Kunne ikke hente bruker:", JSON.stringify(meData)); return null; }
+
+    const etRes2 = await fetch(`https://api.calendly.com/event_types?user=${encodeURIComponent(userUri)}&count=10`, {
+      headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` }
+    });
+    const etData = await etRes2.json();
+    console.log("[CALENDLY] Event types:", JSON.stringify(etData.collection?.map(e => e.slug)));
+    const eventType = etData.collection?.find(e => e.slug === "harklipp" || e.slug === "h-rklipp") || etData.collection?.[0];
+    if (!eventType) { console.error("[CALENDLY] Ingen event types funnet"); return null; }
 
     // Hent ledige tider neste 7 dager
     const now = new Date();
