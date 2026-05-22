@@ -291,7 +291,6 @@ app.post("/chat", rateLimit, async (req, res) => {
     }
 
     const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
-    const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
 
     console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" ${hasBookTag ? "[BOOK]" : ""}`);
 
