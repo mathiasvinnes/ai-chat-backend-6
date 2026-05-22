@@ -77,6 +77,48 @@ ${apningstider}`;
 
 const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 
+// ── Calendly ──────────────────────────────────────────────────────────────────
+
+const CALENDLY_TOKEN    = process.env.CALENDLY_TOKEN;
+const CALENDLY_EVENT_URL = "https://calendly.com/mathias-s-vinnes/harklipp";
+
+async function hentLedigeTider() {
+  if (!CALENDLY_TOKEN) return null;
+  try {
+    // Hent event type URI
+    const etRes = await fetch("https://api.calendly.com/event_types?count=10", {
+      headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}`, "Content-Type": "application/json" }
+    });
+    const etData = await etRes.json();
+    const eventType = etData.collection?.find(e => e.scheduling_url === CALENDLY_EVENT_URL || e.slug === "harklipp");
+    if (!eventType) return null;
+
+    // Hent ledige tider neste 7 dager
+    const now = new Date();
+    const slutt = new Date();
+    slutt.setDate(slutt.getDate() + 7);
+
+    const avRes = await fetch(
+      `https://api.calendly.com/event_type_available_times?event_type=${encodeURIComponent(eventType.uri)}&start_time=${now.toISOString()}&end_time=${slutt.toISOString()}`,
+      { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
+    );
+    const avData = await avRes.json();
+    const tider = avData.collection?.slice(0, 6) || [];
+
+    return tider.map(t => {
+      const dato = new Date(t.start_time);
+      return {
+        visning: dato.toLocaleString("no-NO", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }),
+        tid: t.start_time,
+        url: t.scheduling_url || CALENDLY_EVENT_URL
+      };
+    });
+  } catch (err) {
+    console.error("[FEIL] Calendly:", err.message);
+    return null;
+  }
+}
+
 // ── SendGrid e-post ───────────────────────────────────────────────────────────
 
 const SENDGRID_KEY  = process.env.SENDGRID_KEY;
@@ -236,12 +278,19 @@ app.post("/chat", rateLimit, async (req, res) => {
 
     const data = await openaiRes.json();
     const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
-
     // Vis bookingknapp hvis AI brukte [BOOK] ELLER hvis brukerens melding handler om booking
     const hasBookTag = rawReply.includes("[BOOK]");
-    const bookingKeywords = ["book", "bestill", "time", "ledig", "reserv", "plass", "time", "avtale", "nar kan", "naar kan", "naar", "when"];
+    const bookingKeywords = ["book", "bestill", "time", "ledig", "reserv", "plass", "avtale", "nar kan", "naar kan", "naar", "when"];
     const userWantsBooking = bookingKeywords.some(kw => message.toLowerCase().includes(kw));
     const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
+
+    // Hent ledige tider fra Calendly hvis booking-relatert
+    let ledigeTider = null;
+    if (hasBookTag || userWantsBooking) {
+      ledigeTider = await hentLedigeTider();
+    }
+
+    const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
     const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
 
     console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" ${hasBookTag ? "[BOOK]" : ""}`);
@@ -259,7 +308,7 @@ app.post("/chat", rateLimit, async (req, res) => {
       sendBookingVarsel({ navn: safeName, melding: message });
     }
 
-    return res.json({ reply, bookingUrl });
+    return res.json({ reply, bookingUrl, ledigeTider });
 
   } catch (error) {
     console.error("[FEIL] Nettverksfeil mot OpenAI:", error.message);
