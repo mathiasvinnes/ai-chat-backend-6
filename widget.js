@@ -250,6 +250,30 @@
     setTimeout(function() { messages.scrollTop = messages.scrollHeight; }, 150);
   }
 
+  function visLedigeTider(tider) {
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;padding-left:38px;margin-top:4px;";
+    tider.forEach(function(t) {
+      var btn = document.createElement("a");
+      btn.href = t.url;
+      btn.target = "_blank";
+      btn.rel = "noopener noreferrer";
+      btn.textContent = t.visning;
+      btn.style.cssText = [
+        "display:inline-block","background:#f9f6f1","border:1px solid #e8e2d9",
+        "color:#0d0d0d","font-family:'DM Sans',sans-serif","font-size:13px","font-weight:500",
+        "padding:9px 16px","border-radius:10px","text-decoration:none","cursor:pointer",
+        "transition:background 0.15s,color 0.15s"
+      ].join(";");
+      btn.onmouseover = function() { btn.style.background = CONFIG.aksentFarge; btn.style.color = "#fff"; };
+      btn.onmouseout = function() { btn.style.background = "#f9f6f1"; btn.style.color = "#0d0d0d"; };
+      wrap.appendChild(btn);
+    });
+    messages.appendChild(wrap);
+    setTimeout(function() { messages.scrollTop = messages.scrollHeight; }, 50);
+    setTimeout(function() { messages.scrollTop = messages.scrollHeight; }, 150);
+  }
+
   function showTyping() {
     var row = document.createElement("div");
     row.className = "sk-row"; row.id = "sk-typing-row";
@@ -326,7 +350,11 @@
       var data  = await res.json();
       var reply = data.reply || "Beklager, noe gikk galt.";
       addMessage("bot", reply);
-      if (data.bookingUrl) addBookingButton(data.bookingUrl);
+      if (data.ledigeTider && data.ledigeTider.length > 0) {
+        visLedigeTider(data.ledigeTider);
+      } else if (data.bookingUrl) {
+        addBookingButton(data.bookingUrl);
+      }
       history.push({ role: "assistant", content: reply });
       if (history.length > 20) history = history.slice(-20);
 
