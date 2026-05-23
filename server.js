@@ -111,6 +111,12 @@ async function hentLedigeTider() {
       { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
     );
     const avData = await avRes.json();
+
+    // ── MIDLERTIDIG DEBUG – fjern etter feilsøking ────────────────────────────
+    console.log("[CALENDLY DEBUG] HTTP-status:", avRes.status);
+    console.log("[CALENDLY DEBUG] Råsvar fra Calendly:", JSON.stringify(avData));
+    // ─────────────────────────────────────────────────────────────────────────
+
     const tider = avData.collection?.slice(0, 6) || [];
 
     return tider.map(t => {
@@ -213,10 +219,6 @@ app.get("/", (_req, res) => {
 
 app.get("/widget.js", (_req, res) => {
   res.sendFile(path.join(__dirname, "widget.js"));
-});
-
-app.get("/dashboard", (_req, res) => {
-  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 app.get("/dashboard", (_req, res) => {
