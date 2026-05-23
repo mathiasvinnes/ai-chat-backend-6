@@ -98,7 +98,7 @@ async function hentLedigeTider() {
     });
     const etData = await etRes2.json();
     console.log("[CALENDLY] Event types:", JSON.stringify(etData.collection?.map(e => e.slug)));
-    const eventType = etData.collection?.find(e => e.slug === "harklipp" || e.slug === "h-rklipp") || etData.collection?.[0];
+    const eventType = etData.collection?.[0]; // Bruker første event type automatisk
     if (!eventType) { console.error("[CALENDLY] Ingen event types funnet"); return null; }
 
     // Hent ledige tider neste 7 dager
