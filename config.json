@@ -30,5 +30,22 @@
   "adresse": "Storgata 1, 0123 Oslo",
   "epost": "hei@studioklipp.no",
   "tone": "vennlig og profesjonell",
-  "sprakOgLand": "norsk"
+  "sprakOgLand": "norsk",
+  "faq": {
+    "drop_in": "Vi tar imot drop-in hvis det er ledig kapasitet, men vi anbefaler å booke time for å garantere plass.",
+    "avbestilling": "Avbestilling må skje senest 24 timer før timen. Ved sen avbestilling eller no-show tar vi et gebyr på 200 kr.",
+    "betaling": "Vi tar imot kort (Visa, Mastercard) og Vipps. Vi tar ikke kontanter.",
+    "parkering": "Det er gratis gateparkering rett utenfor salongen.",
+    "barn": "Vi klipper barn fra 3 år og oppover. Barneklipp koster 250 kr.",
+    "varighet": "Herreklipp tar ca. 30 min, dameklipp ca. 45–60 min, og farge tar 1,5–2 timer.",
+    "gavekort": "Vi selger gavekort i valgfritt beløp – ta kontakt på telefon eller e-post for å kjøpe.",
+    "produkter": "Vi bruker profesjonelle produkter fra Wella og Redken.",
+    "forsinkelse": "Gi oss gjerne beskjed hvis du er forsinket. Vi holder timen i opptil 10 minutter.",
+    "tilgjengelighet": "Salongen er tilgjengelig for rullestolbrukere.",
+    "garanti": "Er du ikke fornøyd? Kom tilbake innen 7 dager, så fikser vi det gratis.",
+    "erfaring": "Alle frisørene våre er sertifiserte og har minst 3 års erfaring.",
+    "allergtest": "Vi anbefaler allergitest 48 timer før farging hvis du aldri har farget håret hos oss før.",
+    "forberedelse": "Du trenger ikke forberede deg noe spesielt – bare møt opp med rent eller tørt hår.",
+    "parkering_mc": "Det er også motorsykkelparkering rett ved inngangen."
+  }
 }
