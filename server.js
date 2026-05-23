@@ -102,8 +102,9 @@ async function hentLedigeTider() {
     if (!eventType) { console.error("[CALENDLY] Ingen event types funnet"); return null; }
 
     // Hent ledige tider neste 7 dager
-    const now = new Date();
-    const slutt = new Date();
+    // +5 min buffer så start_time alltid er i fremtiden (Calendly-krav)
+    const now = new Date(Date.now() + 5 * 60 * 1000);
+    const slutt = new Date(now);
     slutt.setDate(slutt.getDate() + 7);
 
     const avRes = await fetch(
