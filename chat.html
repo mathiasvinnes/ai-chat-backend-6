@@ -680,6 +680,9 @@
         addMessage('bot', reply);
         if (data.ledigeTider && data.ledigeTider.length > 0) {
           visLedigeTider(data.ledigeTider);
+        } else if (Array.isArray(data.ledigeTider) && data.ledigeTider.length === 0) {
+          // Tom liste betyr at den spesifikke dagen er fullt booket
+          addMessage('bot', 'Det ser dessverre ut til at det ikke er noen ledige tider den dagen. Vil du se ledige tider en annen dag?');
         } else if (data.bookingUrl) {
           addBookingButton(data.bookingUrl);
         }
