@@ -54,12 +54,12 @@ Retningslinjer:
 - Var varm og imotekommende - bruk kundens navn hvis du kjenner det.
 - Hvis sporsmalet ikke er relevant for ${config.bransje}, avvis hoflig og hold deg til temaet.
 - Ikke spekuler om tjenester du ikke kjenner til - be kunden kontakte oss.
-- Du KAN IKKE booke timer selv. Du har ikke tilgang til kalenderen og kan ikke bekrefte eller reservere tider.
-- Nar kunden spor om booking, ledig tid, eller vil bestille time: avslutt ALLTID svaret med [BOOK] pa en helt egen linje. Dette viser en klikkbar bookingknapp.
-- Eksempel: "Selvfolgelig! Trykk pa knappen under for a booke.\n[BOOK]"
-- Du KAN vise bookingknappen - det er den eneste maten a booke pa. Si gjerne "trykk pa knappen under".
-- Skriv ALDRI at du har booket eller bekreftet en time direkte - kunden ma klikke knappen selv.
-- Skriv ALDRI at du ikke kan gi en lenke - du kan alltid vise bookingknappen med [BOOK].
+- Du KAN vise ledige tider - disse hentes automatisk fra kalenderen og vises under svaret ditt som klikkbare knapper.
+- Du KAN IKKE bekrefte, reservere eller booke tider direkte - kunden klikker pa en ledig tid for a ga videre.
+- Nar kunden spor om booking, ledig tid, eller vil bestille time: si at du henter ledige tider, og avslutt ALLTID med [BOOK] pa en helt egen linje.
+- Eksempel: "Her er ledige tider for deg denne uken:\n[BOOK]"
+- Skriv ALDRI at du ikke har tilgang til kalenderen - du kan alltid hente og vise ledige tider.
+- Skriv ALDRI at du har booket eller bekreftet en time - kunden klikker selv pa tidspunktet.
 
 Informasjon om ${config.bedrift}:
 - Adresse: ${config.adresse || "Ikke oppgitt"}
@@ -79,51 +79,62 @@ const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 
 // ── Calendly ──────────────────────────────────────────────────────────────────
 
-const CALENDLY_TOKEN    = process.env.CALENDLY_TOKEN;
+const CALENDLY_TOKEN     = process.env.CALENDLY_TOKEN;
 const CALENDLY_EVENT_URL = "https://calendly.com/mathias-s-vinnes/harklipp";
 
 async function hentLedigeTider() {
   if (!CALENDLY_TOKEN) return null;
   try {
-    // Hent event type URI
-    const etRes = await fetch("https://api.calendly.com/users/me", {
+    const meRes = await fetch("https://api.calendly.com/users/me", {
       headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` }
     });
-    const meData = await etRes.json();
+    const meData = await meRes.json();
     const userUri = meData.resource?.uri;
-    if (!userUri) { console.error("[CALENDLY] Kunne ikke hente bruker:", JSON.stringify(meData)); return null; }
+    if (!userUri) {
+      console.error("[CALENDLY] Kunne ikke hente bruker:", JSON.stringify(meData));
+      return null;
+    }
 
-    const etRes2 = await fetch(`https://api.calendly.com/event_types?user=${encodeURIComponent(userUri)}&count=10`, {
-      headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` }
-    });
-    const etData = await etRes2.json();
+    const etRes = await fetch(
+      `https://api.calendly.com/event_types?user=${encodeURIComponent(userUri)}&count=10`,
+      { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
+    );
+    const etData = await etRes.json();
     console.log("[CALENDLY] Event types:", JSON.stringify(etData.collection?.map(e => e.slug)));
-    const eventType = etData.collection?.[0]; // Bruker første event type automatisk
-    if (!eventType) { console.error("[CALENDLY] Ingen event types funnet"); return null; }
+    const eventType = etData.collection?.[0];
+    if (!eventType) {
+      console.error("[CALENDLY] Ingen event types funnet");
+      return null;
+    }
 
-    // Hent ledige tider neste 7 dager
-    // +5 min buffer så start_time alltid er i fremtiden (Calendly-krav)
-    const now = new Date(Date.now() + 5 * 60 * 1000);
+    // +5 min buffer - start_time må alltid være i fremtiden (Calendly-krav)
+    const now  = new Date(Date.now() + 5 * 60 * 1000);
     const slutt = new Date(now);
     slutt.setDate(slutt.getDate() + 7);
 
     const avRes = await fetch(
-      `https://api.calendly.com/event_type_available_times?event_type=${encodeURIComponent(eventType.uri)}&start_time=${now.toISOString()}&end_time=${slutt.toISOString()}`,
+      `https://api.calendly.com/event_type_available_times` +
+      `?event_type=${encodeURIComponent(eventType.uri)}` +
+      `&start_time=${now.toISOString()}` +
+      `&end_time=${slutt.toISOString()}`,
       { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
     );
     const avData = await avRes.json();
-
-    // ── MIDLERTIDIG DEBUG – fjern etter feilsøking ────────────────────────────
-    console.log("[CALENDLY DEBUG] HTTP-status:", avRes.status);
-    console.log("[CALENDLY DEBUG] Råsvar fra Calendly:", JSON.stringify(avData));
-    // ─────────────────────────────────────────────────────────────────────────
-
     const tider = avData.collection?.slice(0, 6) || [];
+
+    if (tider.length === 0) {
+      console.warn("[CALENDLY] 0 ledige tider returnert");
+      return null;
+    }
 
     return tider.map(t => {
       const dato = new Date(t.start_time);
       return {
-        visning: dato.toLocaleString("no-NO", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }),
+        visning: dato.toLocaleString("no-NO", {
+          weekday: "long", day: "numeric", month: "long",
+          hour: "2-digit", minute: "2-digit",
+          timeZone: "Europe/Oslo"   // ← tidssone-fix
+        }),
         tid: t.start_time,
         url: t.scheduling_url || CALENDLY_EVENT_URL
       };
@@ -136,9 +147,9 @@ async function hentLedigeTider() {
 
 // ── SendGrid e-post ───────────────────────────────────────────────────────────
 
-const SENDGRID_KEY  = process.env.SENDGRID_KEY;
-const EPOST_FRA     = "mathias.s.vinnes@gmail.com";
-const EPOST_TIL     = "asiakimchi25@gmail.com";
+const SENDGRID_KEY = process.env.SENDGRID_KEY;
+const EPOST_FRA    = "mathias.s.vinnes@gmail.com";
+const EPOST_TIL    = "asiakimchi25@gmail.com";
 
 async function sendBookingVarsel({ navn, melding }) {
   if (!SENDGRID_KEY) return;
@@ -175,6 +186,52 @@ async function sendBookingVarsel({ navn, melding }) {
     console.log(`[EPOST] Bookingvarsel sendt til ${EPOST_TIL}`);
   } catch (err) {
     console.error("[FEIL] Kunne ikke sende e-post:", err.message);
+  }
+}
+
+// Bekreftelsesepost til kunden etter at Calendly-webhook bekrefter booking
+async function sendBekreftelse({ navn, epost, tid }) {
+  if (!SENDGRID_KEY || !epost) return;
+  const tidFormatert = tid
+    ? new Date(tid).toLocaleString("no-NO", {
+        weekday: "long", day: "numeric", month: "long",
+        hour: "2-digit", minute: "2-digit", timeZone: "Europe/Oslo"
+      })
+    : "Ukjent tidspunkt";
+
+  try {
+    await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${SENDGRID_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: epost }] }],
+        from: { email: EPOST_FRA, name: CONFIG.bedrift },
+        subject: `Bookingbekreftelse – ${CONFIG.bedrift}`,
+        content: [{
+          type: "text/html",
+          value: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f9f6f1;border-radius:12px;">
+              <h2 style="color:#0d0d0d;margin-bottom:8px;">Booking bekreftet! ✅</h2>
+              <p style="color:#666;margin-bottom:20px;">Hei ${navn || ""}! Vi gleder oss til å se deg.</p>
+              <div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e8e2d9;">
+                <p><strong>Salong:</strong> ${CONFIG.bedrift}</p>
+                <p><strong>Adresse:</strong> ${CONFIG.adresse || "Se nettside"}</p>
+                <p><strong>Tidspunkt:</strong> ${tidFormatert}</p>
+              </div>
+              <p style="margin-top:20px;color:#666;font-size:13px;">
+                Trenger du å avbestille eller endre timen? Ring oss på ${CONFIG.telefon || CONFIG.epost}.
+              </p>
+            </div>
+          `
+        }]
+      })
+    });
+    console.log(`[EPOST] Bekreftelse sendt til ${epost}`);
+  } catch (err) {
+    console.error("[FEIL] Kunne ikke sende bekreftelse:", err.message);
   }
 }
 
@@ -230,10 +287,31 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", bedrift: CONFIG.bedrift });
 });
 
+// ── Calendly webhook – mottar bekreftelse når kunde booker ───────────────────
+app.post("/webhook/calendly", async (req, res) => {
+  res.json({ ok: true }); // svar raskt til Calendly
+
+  try {
+    const event = req.body;
+    console.log("[WEBHOOK] Calendly event:", event?.event);
+
+    if (event?.event === "invitee.created") {
+      const invitee  = event.payload?.invitee;
+      const navn     = invitee?.name;
+      const epost    = invitee?.email;
+      const tid      = event.payload?.event?.start_time;
+
+      console.log(`[WEBHOOK] Ny booking: ${navn} (${epost}) – ${tid}`);
+      await sendBekreftelse({ navn, epost, tid });
+    }
+  } catch (err) {
+    console.error("[WEBHOOK] Feil:", err.message);
+  }
+});
+
 app.post("/chat", rateLimit, async (req, res) => {
   const { message, name, history = [] } = req.body;
 
-  // Validering
   if (!message || typeof message !== "string") {
     return res.status(400).json({ reply: "Melding mangler eller er ugyldig." });
   }
@@ -245,7 +323,6 @@ app.post("/chat", rateLimit, async (req, res) => {
     return res.status(500).json({ reply: "Konfigurasjonsfeil pa server." });
   }
 
-  // Bygg meldinger
   const safeName = name && typeof name === "string" ? name.slice(0, 50) : null;
   const systemContent = safeName
     ? `${SYSTEM_PROMPT}\n\nKundens navn: ${safeName}`
@@ -265,7 +342,6 @@ app.post("/chat", rateLimit, async (req, res) => {
     { role: "user", content: message.trim() },
   ];
 
-  // Kall OpenAI
   try {
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -287,15 +363,14 @@ app.post("/chat", rateLimit, async (req, res) => {
       return res.status(502).json({ reply: "Kunne ikke na AI-tjenesten. Prov igjen." });
     }
 
-    const data = await openaiRes.json();
+    const data     = await openaiRes.json();
     const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
-    // Vis bookingknapp hvis AI brukte [BOOK] ELLER hvis brukerens melding handler om booking
-    const hasBookTag = rawReply.includes("[BOOK]");
+
+    const hasBookTag      = rawReply.includes("[BOOK]");
     const bookingKeywords = ["book", "bestill", "time", "ledig", "reserv", "plass", "avtale", "nar kan", "naar kan", "naar", "when"];
     const userWantsBooking = bookingKeywords.some(kw => message.toLowerCase().includes(kw));
     const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
 
-    // Hent ledige tider fra Calendly hvis booking-relatert
     let ledigeTider = null;
     if (hasBookTag || userWantsBooking) {
       console.log("[CALENDLY] Henter ledige tider...");
@@ -307,15 +382,8 @@ app.post("/chat", rateLimit, async (req, res) => {
 
     console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" ${hasBookTag ? "[BOOK]" : ""}`);
 
-    // Lagre samtale til Supabase
-    loggSamtale({
-      navn: safeName,
-      melding: message,
-      svar: reply,
-      bookingVist: !!bookingUrl
-    });
+    loggSamtale({ navn: safeName, melding: message, svar: reply, bookingVist: !!bookingUrl });
 
-    // Send e-postvarsel hvis bookingknapp vises
     if (bookingUrl) {
       sendBookingVarsel({ navn: safeName, melding: message });
     }
@@ -333,27 +401,18 @@ app.post("/dashboard-data", async (req, res) => {
   const { nokkel } = req.body;
   if (!nokkel) return res.status(400).json({ error: "Nokkel mangler." });
 
-  // Hent kunde basert på nokkel
-  const kundeRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=*`, {
-    headers: {
-      "apikey": process.env.SUPABASE_KEY,
-      "Authorization": `Bearer ${process.env.SUPABASE_KEY}`
-    }
-  });
-
+  const kundeRes = await fetch(
+    `${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=*`,
+    { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
+  );
   const kunder = await kundeRes.json();
   if (!kunder.length) return res.status(401).json({ error: "Feil nokkel." });
 
   const kunde = kunder[0];
-
-  // Hent samtaler for denne bedriften
-  const samtaleRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/samtaler?bedrift=eq.${encodeURIComponent(kunde.bedrift)}&order=opprettet.desc&select=*`, {
-    headers: {
-      "apikey": process.env.SUPABASE_KEY,
-      "Authorization": `Bearer ${process.env.SUPABASE_KEY}`
-    }
-  });
-
+  const samtaleRes = await fetch(
+    `${process.env.SUPABASE_URL}/rest/v1/samtaler?bedrift=eq.${encodeURIComponent(kunde.bedrift)}&order=opprettet.desc&select=*`,
+    { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
+  );
   const samtaler = await samtaleRes.json();
   return res.json({ bedrift: kunde.bedrift, samtaler });
 });
@@ -363,14 +422,13 @@ app.delete("/slett-samtale", async (req, res) => {
   const { id, nokkel } = req.body;
   if (!id || !nokkel) return res.status(400).json({ error: "Mangler id eller nokkel." });
 
-  // Verifiser nokkel
-  const kundeRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=bedrift`, {
-    headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` }
-  });
+  const kundeRes = await fetch(
+    `${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=bedrift`,
+    { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
+  );
   const kunder = await kundeRes.json();
   if (!kunder.length) return res.status(401).json({ error: "Ugyldig nokkel." });
 
-  // Slett samtalen
   await fetch(`${process.env.SUPABASE_URL}/rest/v1/samtaler?id=eq.${id}`, {
     method: "DELETE",
     headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` }
