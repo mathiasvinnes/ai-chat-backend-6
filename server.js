@@ -120,12 +120,26 @@ async function hentLedigeTider() {
       { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
     );
     const avData = await avRes.json();
-    const tider = avData.collection?.slice(0, 6) || [];
+    const alle = avData.collection || [];
 
-    if (tider.length === 0) {
+    if (alle.length === 0) {
       console.warn("[CALENDLY] 0 ledige tider returnert");
       return null;
     }
+
+    // Grupper per dag (norsk tidssone), maks 2 tider per dag, maks 4 dager
+    const perDag = {};
+    for (const t of alle) {
+      const dag = new Date(t.start_time).toLocaleDateString("no-NO", {
+        timeZone: "Europe/Oslo"
+      });
+      if (!perDag[dag]) perDag[dag] = [];
+      if (perDag[dag].length < 2) perDag[dag].push(t);
+      if (Object.keys(perDag).length >= 4 && perDag[dag].length >= 2) break;
+    }
+
+    const tider = Object.values(perDag).flat();
+    console.log(`[CALENDLY] Viser ${tider.length} tider fordelt pa ${Object.keys(perDag).length} dager`);
 
     return tider.map(t => {
       const dato = new Date(t.start_time);
@@ -133,7 +147,7 @@ async function hentLedigeTider() {
         visning: dato.toLocaleString("no-NO", {
           weekday: "long", day: "numeric", month: "long",
           hour: "2-digit", minute: "2-digit",
-          timeZone: "Europe/Oslo"   // ← tidssone-fix
+          timeZone: "Europe/Oslo"
         }),
         tid: t.start_time,
         url: t.scheduling_url || CALENDLY_EVENT_URL
