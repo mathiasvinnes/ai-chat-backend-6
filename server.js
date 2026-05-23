@@ -82,7 +82,28 @@ const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 const CALENDLY_TOKEN     = process.env.CALENDLY_TOKEN;
 const CALENDLY_EVENT_URL = "https://calendly.com/mathias-s-vinnes/harklipp";
 
-async function hentLedigeTider() {
+// Parser hvilken dag brukeren spør om
+function parseDagFraMelding(melding) {
+  const lower = melding.toLowerCase();
+  if (/\bi dag\b|\bidag\b/.test(lower)) return new Date();
+  if (/\bi morgen\b|\bimorgen\b/.test(lower)) {
+    const d = new Date(); d.setDate(d.getDate() + 1); return d;
+  }
+  const dagMap = { mandag:1, tirsdag:2, onsdag:3, torsdag:4, fredag:5, lordag:6, "l\u00f8rdag":6, sondag:0, "s\u00f8ndag":0 };
+  for (const [navn, nr] of Object.entries(dagMap)) {
+    if (lower.includes(navn)) {
+      const na = new Date();
+      let diff = nr - na.getDay();
+      if (diff <= 0) diff += 7;
+      const dato = new Date(na);
+      dato.setDate(na.getDate() + diff);
+      return dato;
+    }
+  }
+  return null;
+}
+
+async function hentLedigeTider(onsketDag = null) {
   if (!CALENDLY_TOKEN) return null;
   try {
     const meRes = await fetch("https://api.calendly.com/users/me", {
@@ -127,19 +148,32 @@ async function hentLedigeTider() {
       return null;
     }
 
-    // Grupper per dag (norsk tidssone), maks 2 tider per dag, maks 4 dager
-    const perDag = {};
-    for (const t of alle) {
-      const dag = new Date(t.start_time).toLocaleDateString("no-NO", {
-        timeZone: "Europe/Oslo"
-      });
-      if (!perDag[dag]) perDag[dag] = [];
-      if (perDag[dag].length < 2) perDag[dag].push(t);
-      if (Object.keys(perDag).length >= 4 && perDag[dag].length >= 2) break;
-    }
+    let tider;
 
-    const tider = Object.values(perDag).flat();
-    console.log(`[CALENDLY] Viser ${tider.length} tider fordelt pa ${Object.keys(perDag).length} dager`);
+    if (onsketDag) {
+      // Filtrer til kun den ønskede dagen, vis opptil 6 tider
+      const onsketDagStr = onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
+      tider = alle
+        .filter(t => new Date(t.start_time).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }) === onsketDagStr)
+        .slice(0, 6);
+      console.log(`[CALENDLY] Filtrert til ${onsketDagStr}: ${tider.length} tider`);
+
+      if (tider.length === 0) {
+        console.warn("[CALENDLY] Ingen tider funnet for ønsket dag");
+        return [];  // tom array = chatbot vet at dagen er opptatt
+      }
+    } else {
+      // Ingen spesifikk dag – vis 2 tider per dag, maks 4 dager
+      const perDag = {};
+      for (const t of alle) {
+        const dag = new Date(t.start_time).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
+        if (!perDag[dag]) perDag[dag] = [];
+        if (perDag[dag].length < 2) perDag[dag].push(t);
+        if (Object.keys(perDag).length >= 4 && perDag[dag].length >= 2) break;
+      }
+      tider = Object.values(perDag).flat();
+      console.log(`[CALENDLY] Viser ${tider.length} tider fordelt pa ${Object.keys(perDag).length} dager`);
+    }
 
     return tider.map(t => {
       const dato = new Date(t.start_time);
@@ -388,7 +422,11 @@ app.post("/chat", rateLimit, async (req, res) => {
     let ledigeTider = null;
     if (hasBookTag || userWantsBooking) {
       console.log("[CALENDLY] Henter ledige tider...");
-      ledigeTider = await hentLedigeTider();
+      const onsketDag = parseDagFraMelding(message);
+      if (onsketDag) {
+        console.log("[CALENDLY] Ønsket dag:", onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }));
+      }
+      ledigeTider = await hentLedigeTider(onsketDag);
       console.log("[CALENDLY] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
     }
 
