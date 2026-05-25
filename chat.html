@@ -558,6 +558,8 @@
       setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 150);
     }
 
+    const BOOK_API_URL = CHAT_API_URL.replace('/chat', '/book');
+
     function visLedigeTider(tider) {
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding-left:44px;margin-top:4px;';
@@ -574,39 +576,47 @@
         btn.onmouseover = () => { btn.style.background = '#b8924a'; btn.style.color = '#fff'; };
         btn.onmouseout  = () => { btn.style.background = '#f5f0e8'; btn.style.color = '#0d0d0d'; };
 
-        btn.addEventListener('click', () => {
-          const navn  = nameInput.value.trim();
-          const epost = emailInput.value.trim();
+        btn.addEventListener('click', async () => {
+          const navn  = nameInput?.value?.trim();
+          const epost = emailInput?.value?.trim();
 
-          // Valider at navn og e-post er fylt inn
           if (!navn || !epost) {
-            addMessage('bot', 'For å fullføre bookingen trenger jeg navn og e-post. Fyll inn feltene i panelet til venstre, og klikk på tidspunktet igjen! 😊');
+            addMessage('bot', 'Fyll inn navn og e-post i panelet til venstre, og klikk på tidspunktet igjen! 😊');
             return;
           }
 
-          // Bygg Calendly-URL med prefill
-          const prefill  = new URLSearchParams({ name: navn, email: epost });
-          const separator = t.url.includes('?') ? '&' : '?';
-          const fullUrl   = `${t.url}${separator}${prefill.toString()}`;
-
-          // Åpne Calendly i ny fane
-          window.open(fullUrl, '_blank', 'noopener,noreferrer');
-
-          // Vis bekreftelsesmelding i chat
-          addMessage('bot',
-            `Flott, ${navn}! 🎉 Vi åpnet booking for ${t.visning}. ` +
-            `Fyll inn det siste i vinduet som åpnet seg, så sender vi en bekreftelse til ${epost}.`
-          );
-
-          // Deaktiver alle tidsknapper etter valg
+          // Lås alle knapper mens vi booker
           wrap.querySelectorAll('button').forEach(b => {
-            b.disabled = true;
-            b.style.opacity = '0.45';
-            b.style.cursor  = 'not-allowed';
+            b.disabled = true; b.style.opacity = '0.4'; b.style.cursor = 'not-allowed';
           });
-          btn.style.background = '#b8924a';
-          btn.style.color      = '#fff';
-          btn.style.opacity    = '1';
+          btn.style.background = '#b8924a'; btn.style.color = '#fff'; btn.style.opacity = '1';
+          addMessage('bot', `Booker time for ${t.visning}...`);
+
+          try {
+            const res = await fetch(BOOK_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ navn, epost, tid: t.tid })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+              addMessage('bot',
+                `✅ Time booket! En bekreftelse er sendt til ${epost}. ` +
+                `Vi gleder oss til å se deg ${t.visning}! 🎉`
+              );
+            } else {
+              addMessage('bot', `Noe gikk galt: ${data.feil || 'Prøv igjen eller ring oss direkte.'}`);
+              wrap.querySelectorAll('button').forEach(b => {
+                b.disabled = false; b.style.opacity = '1'; b.style.cursor = 'pointer';
+              });
+            }
+          } catch (err) {
+            addMessage('bot', 'Kunne ikke fullføre bookingen. Prøv igjen eller ring oss direkte.');
+            wrap.querySelectorAll('button').forEach(b => {
+              b.disabled = false; b.style.opacity = '1'; b.style.cursor = 'pointer';
+            });
+          }
         });
 
         wrap.appendChild(btn);
