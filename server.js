@@ -85,8 +85,9 @@ const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 
 // ── Calendly ──────────────────────────────────────────────────────────────────
 
-const CALENDLY_TOKEN     = process.env.CALENDLY_TOKEN;
-const CALENDLY_EVENT_URL = "https://calendly.com/mathias-s-vinnes/harklipp";
+const CAL_API_KEY      = process.env.CAL_API_KEY;
+const CAL_EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID);
+const CAL_BASE         = "https://api.cal.com/v2";
 
 // Parser hvilken dag brukeren spør om
 function parseDagFraMelding(melding) {
@@ -110,93 +111,110 @@ function parseDagFraMelding(melding) {
 }
 
 async function hentLedigeTider(onsketDag = null) {
-  if (!CALENDLY_TOKEN) return null;
+  if (!CAL_API_KEY || !CAL_EVENT_TYPE_ID) return null;
   try {
-    const meRes = await fetch("https://api.calendly.com/users/me", {
-      headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` }
-    });
-    const meData = await meRes.json();
-    const userUri = meData.resource?.uri;
-    if (!userUri) {
-      console.error("[CALENDLY] Kunne ikke hente bruker:", JSON.stringify(meData));
-      return null;
-    }
-
-    const etRes = await fetch(
-      `https://api.calendly.com/event_types?user=${encodeURIComponent(userUri)}&count=10`,
-      { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
-    );
-    const etData = await etRes.json();
-    console.log("[CALENDLY] Event types:", JSON.stringify(etData.collection?.map(e => e.slug)));
-    const eventType = etData.collection?.[0];
-    if (!eventType) {
-      console.error("[CALENDLY] Ingen event types funnet");
-      return null;
-    }
-
-    // +5 min buffer - start_time må alltid være i fremtiden (Calendly-krav)
     const now  = new Date(Date.now() + 5 * 60 * 1000);
     const slutt = new Date(now);
     slutt.setDate(slutt.getDate() + 7);
 
-    const avRes = await fetch(
-      `https://api.calendly.com/event_type_available_times` +
-      `?event_type=${encodeURIComponent(eventType.uri)}` +
-      `&start_time=${now.toISOString()}` +
-      `&end_time=${slutt.toISOString()}`,
-      { headers: { "Authorization": `Bearer ${CALENDLY_TOKEN}` } }
-    );
-    const avData = await avRes.json();
-    const alle = avData.collection || [];
+    const url = `${CAL_BASE}/slots/available` +
+      `?eventTypeId=${CAL_EVENT_TYPE_ID}` +
+      `&startTime=${now.toISOString()}` +
+      `&endTime=${slutt.toISOString()}` +
+      `&timeZone=Europe/Oslo`;
 
-    if (alle.length === 0) {
-      console.warn("[CALENDLY] 0 ledige tider returnert");
+    const res  = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${CAL_API_KEY}`,
+        "cal-api-version": "2024-08-13"
+      }
+    });
+    const data = await res.json();
+
+    if (data.status !== "success") {
+      console.error("[CAL] Feil fra API:", JSON.stringify(data));
       return null;
     }
 
-    let tider;
+    // Flatt ut slots-objektet { "2024-08-26": [{time:...}, ...], ... }
+    const slots = data.data?.slots || {};
+    const alle  = Object.entries(slots).flatMap(([dag, tider]) =>
+      tider.map(t => ({ dag, tid: t.time }))
+    );
+
+    if (alle.length === 0) {
+      console.warn("[CAL] 0 ledige tider returnert");
+      return null;
+    }
+
+    let utvalg;
 
     if (onsketDag) {
-      // Filtrer til kun den ønskede dagen, vis opptil 6 tider
-      const onsketDagStr = onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
-      tider = alle
-        .filter(t => new Date(t.start_time).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }) === onsketDagStr)
-        .slice(0, 6);
-      console.log(`[CALENDLY] Filtrert til ${onsketDagStr}: ${tider.length} tider`);
-
-      if (tider.length === 0) {
-        console.warn("[CALENDLY] Ingen tider funnet for ønsket dag");
-        return [];  // tom array = chatbot vet at dagen er opptatt
-      }
+      const onsketStr = onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
+      utvalg = alle.filter(t =>
+        new Date(t.tid).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }) === onsketStr
+      ).slice(0, 6);
+      console.log(`[CAL] Filtrert til ${onsketStr}: ${utvalg.length} tider`);
+      if (utvalg.length === 0) return [];
     } else {
-      // Ingen spesifikk dag – vis 2 tider per dag, maks 4 dager
       const perDag = {};
       for (const t of alle) {
-        const dag = new Date(t.start_time).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
+        const dag = new Date(t.tid).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
         if (!perDag[dag]) perDag[dag] = [];
         if (perDag[dag].length < 2) perDag[dag].push(t);
         if (Object.keys(perDag).length >= 4 && perDag[dag].length >= 2) break;
       }
-      tider = Object.values(perDag).flat();
-      console.log(`[CALENDLY] Viser ${tider.length} tider fordelt pa ${Object.keys(perDag).length} dager`);
+      utvalg = Object.values(perDag).flat();
+      console.log(`[CAL] Viser ${utvalg.length} tider fordelt pa ${Object.keys(perDag).length} dager`);
     }
 
-    return tider.map(t => {
-      const dato = new Date(t.start_time);
-      return {
-        visning: dato.toLocaleString("no-NO", {
-          weekday: "long", day: "numeric", month: "long",
-          hour: "2-digit", minute: "2-digit",
-          timeZone: "Europe/Oslo"
-        }),
-        tid: t.start_time,
-        url: t.scheduling_url || CALENDLY_EVENT_URL
-      };
-    });
+    return utvalg.map(t => ({
+      visning: new Date(t.tid).toLocaleString("no-NO", {
+        weekday: "long", day: "numeric", month: "long",
+        hour: "2-digit", minute: "2-digit",
+        timeZone: "Europe/Oslo"
+      }),
+      tid: t.tid
+    }));
+
   } catch (err) {
-    console.error("[FEIL] Calendly:", err.message);
+    console.error("[FEIL] Cal.com hentLedigeTider:", err.message);
     return null;
   }
+}
+
+async function opprettBooking({ navn, epost, tid }) {
+  try {
+    const res = await fetch(`${CAL_BASE}/bookings`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${CAL_API_KEY}`,
+        "cal-api-version": "2024-08-13",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        eventTypeId: CAL_EVENT_TYPE_ID,
+        start: tid,
+        attendee: {
+          name: navn,
+          email: epost,
+          timeZone: "Europe/Oslo",
+          language: "no"
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.status !== "success") {
+      console.error("[CAL] Booking feilet:", JSON.stringify(data));
+      return { ok: false, feil: data.error?.message || "Ukjent feil" };
+    }
+    console.log(`[CAL] Booking opprettet: ${navn} (${epost}) – ${tid}`);
+    return { ok: true, booking: data.data };
+  } catch (err) {
+    console.error("[FEIL] Cal.com opprettBooking:", err.message);
+    return { ok: false, feil: err.message };
+  }
+}
 }
 
 // ── SendGrid e-post ───────────────────────────────────────────────────────────
@@ -427,13 +445,13 @@ app.post("/chat", rateLimit, async (req, res) => {
 
     let ledigeTider = null;
     if (hasBookTag || userWantsBooking) {
-      console.log("[CALENDLY] Henter ledige tider...");
+      console.log("[CAL] Henter ledige tider...");
       const onsketDag = parseDagFraMelding(message);
       if (onsketDag) {
-        console.log("[CALENDLY] Ønsket dag:", onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }));
+        console.log("[CAL] Ønsket dag:", onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }));
       }
       ledigeTider = await hentLedigeTider(onsketDag);
-      console.log("[CALENDLY] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
+      console.log("[CAL] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
     }
 
     const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
@@ -452,6 +470,33 @@ app.post("/chat", rateLimit, async (req, res) => {
     console.error("[FEIL] Nettverksfeil mot OpenAI:", error.message);
     return res.status(500).json({ reply: "Serverfeil. Prov igjen senere." });
   }
+});
+
+// ── /book – opprett Cal.com-booking direkte fra chatten ──────────────────────
+app.post("/book", rateLimit, async (req, res) => {
+  const { navn, epost, tid } = req.body;
+
+  if (!navn || !epost || !tid) {
+    return res.status(400).json({ ok: false, feil: "Navn, e-post og tidspunkt er påkrevd." });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) {
+    return res.status(400).json({ ok: false, feil: "Ugyldig e-postadresse." });
+  }
+
+  const resultat = await opprettBooking({
+    navn: navn.slice(0, 100),
+    epost: epost.slice(0, 200),
+    tid
+  });
+
+  if (!resultat.ok) {
+    return res.status(502).json({ ok: false, feil: resultat.feil });
+  }
+
+  // Send bookingvarsel til salongen
+  sendBookingVarsel({ navn, melding: `Ny booking: ${tid}` });
+
+  return res.json({ ok: true });
 });
 
 // Dashboard data endpoint
