@@ -131,6 +131,10 @@ async function hentLedigeTider(onsketDag = null) {
     });
     const data = await res.json();
 
+    // MIDLERTIDIG DEBUG
+    console.log("[CAL DEBUG] HTTP status:", res.status);
+    console.log("[CAL DEBUG] Råsvar:", JSON.stringify(data).slice(0, 600));
+
     if (data.status !== "success") {
       console.error("[CAL] Feil fra API:", JSON.stringify(data));
       return null;
