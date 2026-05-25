@@ -215,7 +215,6 @@ async function opprettBooking({ navn, epost, tid }) {
     return { ok: false, feil: err.message };
   }
 }
-}
 
 // ── SendGrid e-post ───────────────────────────────────────────────────────────
 
