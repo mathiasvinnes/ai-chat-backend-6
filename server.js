@@ -57,13 +57,24 @@ Retningslinjer:
 - Var varm og imotekommende - bruk kundens navn hvis du kjenner det.
 - Hvis sporsmalet ikke er relevant for ${config.bransje}, avvis hoflig og hold deg til temaet.
 - Svar alltid fra informasjonen nedenfor. Hvis du ikke vet svaret, be kunden ringe eller sende e-post.
-- Du KAN vise ledige tider - disse hentes automatisk fra kalenderen og vises under svaret ditt som klikkbare knapper.
-- Du KAN IKKE bekrefte, reservere eller booke tider direkte - kunden klikker pa en ledig tid for a ga videre.
-- Nar kunden spor om booking, ledig tid, eller vil bestille time: si kort at du sjekker, og avslutt ALLTID med [BOOK] pa en helt egen linje.
-- Eksempel: "Jeg sjekker ledige tider for deg!\n[BOOK]"
-- Skriv ALDRI "her er ledige tider" - du vet ikke om det finnes tider for nar kunden spor.
-- Skriv ALDRI at du ikke har tilgang til kalenderen - du kan alltid sjekke ledige tider.
-- Skriv ALDRI at du har booket eller bekreftet en time - kunden klikker selv pa tidspunktet.
+- Du KAN vise ledige tider - disse hentes automatisk fra kalenderen og vises under svaret ditt.
+- Du KAN IKKE bekrefte, reservere eller booke tider direkte - kunden klikker pa en ledig tid.
+
+REGLER FOR [BOOK]-TAG:
+- Avslutt med [BOOK] pa en HELT EGEN LINJE kun nar kunden eksplisitt vil bestille, se ledige tider, eller spor om booking.
+- Eksempler der du SKAL bruke [BOOK]:
+  * "kan jeg bestille time?" → "Selvfolgelig! La meg sjekke ledige tider.\n[BOOK]"
+  * "er det noen ledige tider?" → "Jeg sjekker for deg!\n[BOOK]"
+  * "vil booke pa fredag" → "Jeg sjekker fredag for deg!\n[BOOK]"
+  * "kan jeg endre til torsdag 12?" → "Jeg sjekker om torsdag 12:00 er ledig!\n[BOOK]"
+- Eksempler der du IKKE skal bruke [BOOK]:
+  * "er dere apne pa lordag?" → svar med apningstider, ingen [BOOK]
+  * "er det ledig?" (oppfolgingssporsmal) → si "Tidene over er de ledige - klikk pa en for a booke!"
+  * "hva koster en klipp?" → svar med pris, ingen [BOOK]
+  * "takk" / "ok" / "greit" → vanlig svar, ingen [BOOK]
+- Skriv ALDRI "her er ledige tider" - du vet ikke om det finnes tider enna.
+- Skriv ALDRI at du ikke har tilgang til kalenderen.
+- Skriv ALDRI at du har booket - kunden ma klikke selv.
 
 Kontaktinformasjon:
 - Adresse: ${config.adresse || "Ikke oppgitt"}
@@ -90,13 +101,25 @@ const CAL_API_KEY      = process.env.CAL_API_KEY;
 const CAL_EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID);
 const CAL_BASE         = "https://api.cal.eu/v2";
 
-// Parser klokkeslett fra melding, f.eks. "12:00" eller "kl 14"
+// Parser klokkeslett fra melding – krever "kl", ":" eller "."-format for å unngå falske treff
+// Støtter: "kl 14", "kl. 14:30", "14:00", "14.00", "halv 3" (=14:30), "kvart over 2" (=14:15)
 function parseTidFraMelding(melding) {
-  const m = melding.match(/\b(\d{1,2})[:.]?(\d{2})?\s*(?:kl\.?)?\b/);
+  const lower = melding.toLowerCase();
+
+  // Halv X → X*100 - 30 min (halv 3 = 14:30 i norsk kontekst, dvs. halv tre = 14:30)
+  const halvMatch = lower.match(/halv\s+(\w+)/);
+  if (halvMatch) {
+    const tallord = { en:1,ett:1,to:2,tre:3,fire:4,fem:5,seks:6,sju:7,atte:8,åtte:8,ni:9,ti:10,elleve:11,tolv:12 };
+    const t = tallord[halvMatch[1]];
+    if (t) return { timer: t - 1 + 12 > 22 ? t - 1 : t - 1 + (t <= 7 ? 12 : 0), min: 30 };
+  }
+
+  // Krev "kl", ":", eller "." mellom timer og minutt
+  const m = lower.match(/(?:kl\.?\s*)(\d{1,2})(?:[:. ](\d{2}))?|\b(\d{1,2}):(\d{2})\b/);
   if (!m) return null;
-  const timer = parseInt(m[1]);
-  const min   = parseInt(m[2] || "0");
-  if (timer < 6 || timer > 22) return null;
+  const timer = parseInt(m[1] ?? m[3]);
+  const min   = parseInt(m[2] ?? m[4] ?? "0");
+  if (isNaN(timer) || timer < 6 || timer > 22) return null;
   return { timer, min };
 }
 
@@ -107,12 +130,15 @@ function parseDagFraMelding(melding) {
   if (/\bi morgen\b|\bimorgen\b/.test(lower)) {
     const d = new Date(); d.setDate(d.getDate() + 1); return d;
   }
+  // "neste uke" → hopp 7 dager frem
+  const nesteUke = /neste uke|neste uken/.test(lower);
   const dagMap = { mandag:1, tirsdag:2, onsdag:3, torsdag:4, fredag:5, lordag:6, "l\u00f8rdag":6, sondag:0, "s\u00f8ndag":0 };
   for (const [navn, nr] of Object.entries(dagMap)) {
     if (lower.includes(navn)) {
       const na = new Date();
       let diff = nr - na.getDay();
-      if (diff <= 0) diff += 7;
+      // Hvis dagen allerede er passert denne uken, eller "neste uke" er nevnt → neste forekomst
+      if (diff <= 0 || nesteUke) diff += 7;
       const dato = new Date(na);
       dato.setDate(na.getDate() + diff);
       return dato;
@@ -149,9 +175,6 @@ async function hentLedigeTider(onsketDag = null, onsketTid = null) {
     });
 
     const raw  = await res.text();
-    console.log("[CAL DEBUG] HTTP status:", res.status);
-    console.log("[CAL DEBUG] Råsvar:", raw.slice(0, 800));
-
     const data = JSON.parse(raw);
 
     if (data.status !== "success") {
@@ -166,8 +189,9 @@ async function hentLedigeTider(onsketDag = null, onsketTid = null) {
     );
 
     if (alle.length === 0) {
-      console.warn("[CAL] 0 ledige tider returnert");
-      return null;
+      console.warn("[CAL] 0 ledige tider totalt");
+      // Returner [] (ingen tider) ikke null (feil) – Cal.com svarte OK men ingen tider
+      return onsketDag ? [] : null;
     }
 
     let utvalg;
@@ -311,51 +335,6 @@ async function sendBookingVarsel({ navn, melding }) {
   }
 }
 
-// Bekreftelsesepost til kunden etter at Calendly-webhook bekrefter booking
-async function sendBekreftelse({ navn, epost, tid }) {
-  if (!SENDGRID_KEY || !epost) return;
-  const tidFormatert = tid
-    ? new Date(tid).toLocaleString("no-NO", {
-        weekday: "long", day: "numeric", month: "long",
-        hour: "2-digit", minute: "2-digit", timeZone: "Europe/Oslo"
-      })
-    : "Ukjent tidspunkt";
-
-  try {
-    await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${SENDGRID_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: epost }] }],
-        from: { email: EPOST_FRA, name: CONFIG.bedrift },
-        subject: `Bookingbekreftelse – ${CONFIG.bedrift}`,
-        content: [{
-          type: "text/html",
-          value: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f9f6f1;border-radius:12px;">
-              <h2 style="color:#0d0d0d;margin-bottom:8px;">Booking bekreftet! ✅</h2>
-              <p style="color:#666;margin-bottom:20px;">Hei ${navn || ""}! Vi gleder oss til å se deg.</p>
-              <div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e8e2d9;">
-                <p><strong>Salong:</strong> ${CONFIG.bedrift}</p>
-                <p><strong>Adresse:</strong> ${CONFIG.adresse || "Se nettside"}</p>
-                <p><strong>Tidspunkt:</strong> ${tidFormatert}</p>
-              </div>
-              <p style="margin-top:20px;color:#666;font-size:13px;">
-                Trenger du å avbestille eller endre timen? Ring oss på ${CONFIG.telefon || CONFIG.epost}.
-              </p>
-            </div>
-          `
-        }]
-      })
-    });
-    console.log(`[EPOST] Bekreftelse sendt til ${epost}`);
-  } catch (err) {
-    console.error("[FEIL] Kunne ikke sende bekreftelse:", err.message);
-  }
-}
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
@@ -370,6 +349,14 @@ app.use(express.json({ limit: "10kb" }));
 
 // Enkel rate limiter (maks 20 req/min per IP)
 const rateLimitMap = new Map();
+// Rydd opp gamle IP-er hvert 5. minutt for å unngå memory leak
+setInterval(() => {
+  const grense = Date.now() - 60_000;
+  for (const [ip, entry] of rateLimitMap) {
+    if (entry.start < grense) rateLimitMap.delete(ip);
+  }
+}, 5 * 60_000);
+
 function rateLimit(req, res, next) {
   const ip = req.ip;
   const now = Date.now();
@@ -407,28 +394,6 @@ app.get("/dashboard", (_req, res) => {
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", bedrift: CONFIG.bedrift });
-});
-
-// ── Calendly webhook – mottar bekreftelse når kunde booker ───────────────────
-app.post("/webhook/calendly", async (req, res) => {
-  res.json({ ok: true }); // svar raskt til Calendly
-
-  try {
-    const event = req.body;
-    console.log("[WEBHOOK] Calendly event:", event?.event);
-
-    if (event?.event === "invitee.created") {
-      const invitee  = event.payload?.invitee;
-      const navn     = invitee?.name;
-      const epost    = invitee?.email;
-      const tid      = event.payload?.event?.start_time;
-
-      console.log(`[WEBHOOK] Ny booking: ${navn} (${epost}) – ${tid}`);
-      await sendBekreftelse({ navn, epost, tid });
-    }
-  } catch (err) {
-    console.error("[WEBHOOK] Feil:", err.message);
-  }
 });
 
 app.post("/chat", rateLimit, async (req, res) => {
@@ -488,13 +453,13 @@ app.post("/chat", rateLimit, async (req, res) => {
     const data     = await openaiRes.json();
     const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
 
-    const hasBookTag      = rawReply.includes("[BOOK]");
-    const bookingKeywords = ["book", "bestill", "bestille", "reserv", "plass", "avtale", "ledige tider", "ledig tid", "nar kan jeg", "naar kan jeg", "when can"];
-    const userWantsBooking = bookingKeywords.some(kw => message.toLowerCase().includes(kw));
-    const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
+    const hasBookTag = rawReply.includes("[BOOK]");
+    const reply      = rawReply.replace(/\[BOOK\]/g, "").trim();
 
+    // Hent dag og klokkeslett fra BRUKERENS melding (ikke AI-svaret)
+    // slik at "torsdag 12:00" gir riktig filtrering
     let ledigeTider = null;
-    if (hasBookTag || userWantsBooking) {
+    if (hasBookTag) {
       console.log("[CAL] Henter ledige tider...");
       const onsketDag = parseDagFraMelding(message);
       const onsketTid = parseTidFraMelding(message);
@@ -504,8 +469,8 @@ app.post("/chat", rateLimit, async (req, res) => {
       console.log("[CAL] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
     }
 
-    // Vis bookingUrl-knapp kun som fallback når Cal.com ikke returnerte tider
-    const bookingUrl = (hasBookTag || userWantsBooking) && !ledigeTider
+    // Vis fallback-knapp kun hvis Cal.com feilet helt (null), ikke ved tomme tider ([])
+    const bookingUrl = hasBookTag && ledigeTider === null
       ? (CONFIG.bookinglink || null)
       : null;
 
@@ -535,6 +500,11 @@ app.post("/book", rateLimit, async (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) {
     return res.status(400).json({ ok: false, feil: "Ugyldig e-postadresse." });
   }
+  // Valider at tid er en gyldig ISO 8601-streng og i fremtiden
+  const tidDato = new Date(tid);
+  if (isNaN(tidDato.getTime()) || tidDato < new Date()) {
+    return res.status(400).json({ ok: false, feil: "Ugyldig eller passert tidspunkt." });
+  }
 
   const resultat = await opprettBooking({
     navn: navn.slice(0, 100),
@@ -556,41 +526,48 @@ app.post("/book", rateLimit, async (req, res) => {
 app.post("/dashboard-data", async (req, res) => {
   const { nokkel } = req.body;
   if (!nokkel) return res.status(400).json({ error: "Nokkel mangler." });
+  try {
+    const kundeRes = await fetch(
+      `${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=*`,
+      { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
+    );
+    const kunder = await kundeRes.json();
+    if (!Array.isArray(kunder) || !kunder.length) return res.status(401).json({ error: "Feil nokkel." });
 
-  const kundeRes = await fetch(
-    `${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=*`,
-    { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
-  );
-  const kunder = await kundeRes.json();
-  if (!kunder.length) return res.status(401).json({ error: "Feil nokkel." });
-
-  const kunde = kunder[0];
-  const samtaleRes = await fetch(
-    `${process.env.SUPABASE_URL}/rest/v1/samtaler?bedrift=eq.${encodeURIComponent(kunde.bedrift)}&order=opprettet.desc&select=*`,
-    { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
-  );
-  const samtaler = await samtaleRes.json();
-  return res.json({ bedrift: kunde.bedrift, samtaler });
+    const kunde = kunder[0];
+    const samtaleRes = await fetch(
+      `${process.env.SUPABASE_URL}/rest/v1/samtaler?bedrift=eq.${encodeURIComponent(kunde.bedrift)}&order=opprettet.desc&select=*`,
+      { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
+    );
+    const samtaler = await samtaleRes.json();
+    return res.json({ bedrift: kunde.bedrift, samtaler: Array.isArray(samtaler) ? samtaler : [] });
+  } catch (err) {
+    console.error("[FEIL] dashboard-data:", err.message);
+    return res.status(500).json({ error: "Serverfeil. Prøv igjen." });
+  }
 });
 
 // Slett samtale
 app.delete("/slett-samtale", async (req, res) => {
   const { id, nokkel } = req.body;
   if (!id || !nokkel) return res.status(400).json({ error: "Mangler id eller nokkel." });
+  try {
+    const kundeRes = await fetch(
+      `${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=bedrift`,
+      { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
+    );
+    const kunder = await kundeRes.json();
+    if (!Array.isArray(kunder) || !kunder.length) return res.status(401).json({ error: "Ugyldig nokkel." });
 
-  const kundeRes = await fetch(
-    `${process.env.SUPABASE_URL}/rest/v1/kunder?nokkel=eq.${encodeURIComponent(nokkel)}&select=bedrift`,
-    { headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` } }
-  );
-  const kunder = await kundeRes.json();
-  if (!kunder.length) return res.status(401).json({ error: "Ugyldig nokkel." });
-
-  await fetch(`${process.env.SUPABASE_URL}/rest/v1/samtaler?id=eq.${id}`, {
-    method: "DELETE",
-    headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` }
-  });
-
-  return res.json({ ok: true });
+    await fetch(`${process.env.SUPABASE_URL}/rest/v1/samtaler?id=eq.${id}`, {
+      method: "DELETE",
+      headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": `Bearer ${process.env.SUPABASE_KEY}` }
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[FEIL] slett-samtale:", err.message);
+    return res.status(500).json({ error: "Serverfeil. Prøv igjen." });
+  }
 });
 
 // 404 fallback
