@@ -88,7 +88,7 @@ const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 
 const CAL_API_KEY      = process.env.CAL_API_KEY;
 const CAL_EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID);
-const CAL_BASE         = "https://api.cal.com/v2";
+const CAL_BASE         = "https://api.cal.eu/v2";
 
 // Parser hvilken dag brukeren spør om
 function parseDagFraMelding(melding) {
