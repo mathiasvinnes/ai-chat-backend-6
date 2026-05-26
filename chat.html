@@ -516,7 +516,12 @@
 
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
-      bubble.textContent = text;
+      // Støtt linjeskift i AI-svar (\n → <br>)
+      bubble.innerHTML = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
 
       if (role === 'user') {
         row.append(bubble, avatar);
@@ -593,11 +598,15 @@
           addMessage('bot', `Booker time for ${t.visning}...`);
 
           try {
+            const bookCtrl = new AbortController();
+            const bookTimeout = setTimeout(() => bookCtrl.abort(), 15000);
             const res = await fetch(BOOK_API_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ navn, epost, tid: t.tid })
+              body: JSON.stringify({ navn, epost, tid: t.tid }),
+              signal: bookCtrl.signal
             });
+            clearTimeout(bookTimeout);
             const data = await res.json();
 
             if (data.ok) {
@@ -672,11 +681,15 @@
       showTyping();
 
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000); // 15 sek timeout
         const response = await fetch(CHAT_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, phone, businessName, message, history })
+          body: JSON.stringify({ name, email, phone, businessName, message, history }),
+          signal: controller.signal
         });
+        clearTimeout(timeout);
 
         removeTyping();
 
@@ -690,13 +703,18 @@
         addMessage('bot', reply);
         if (data.ledigeTider && data.ledigeTider.length > 0) {
           visLedigeTider(data.ledigeTider);
+          // Fortell AI hvilke tider som faktisk ble vist, for kontekst ved oppfølging
+          const tidsliste = data.ledigeTider.map(t => t.visning).join(', ');
+          history.push({ role: 'assistant', content: `${reply} [Ledige tider vist: ${tidsliste}]` });
         } else if (Array.isArray(data.ledigeTider) && data.ledigeTider.length === 0) {
-          // Tom liste betyr at den spesifikke dagen er fullt booket
-          addMessage('bot', 'Det ser dessverre ut til at det ikke er noen ledige tider den dagen. Vil du se ledige tider en annen dag?');
+          addMessage('bot', 'Det ser dessverre ikke ut til å være ledige tider den dagen. Vil du prøve en annen dag?');
+          history.push({ role: 'assistant', content: reply + ' [Ingen ledige tider funnet for ønsket dag]' });
         } else if (data.bookingUrl) {
           addBookingButton(data.bookingUrl);
+          history.push({ role: 'assistant', content: reply });
+        } else {
+          history.push({ role: 'assistant', content: reply });
         }
-        history.push({ role: 'assistant', content: reply });
 
         // Trim history to last 20 messages
         if (history.length > 20) history = history.slice(-20);
@@ -705,7 +723,11 @@
 
       } catch (err) {
         removeTyping();
-        addMessage('bot', 'Noe gikk galt. Sjekk at backend-en kjører og prøv igjen.');
+        if (err.name === 'AbortError') {
+          addMessage('bot', 'Det tok for lang tid å svare. Prøv igjen – er du fortsatt der? 😊');
+        } else {
+          addMessage('bot', 'Noe gikk galt. Prøv igjen om litt.');
+        }
         statusEl.innerHTML = '<span class="error">Feil: kunne ikke nå serveren.</span>';
         console.error(err);
       } finally {
