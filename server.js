@@ -59,9 +59,10 @@ Retningslinjer:
 - Svar alltid fra informasjonen nedenfor. Hvis du ikke vet svaret, be kunden ringe eller sende e-post.
 - Du KAN vise ledige tider - disse hentes automatisk fra kalenderen og vises under svaret ditt som klikkbare knapper.
 - Du KAN IKKE bekrefte, reservere eller booke tider direkte - kunden klikker pa en ledig tid for a ga videre.
-- Nar kunden spor om booking, ledig tid, eller vil bestille time: si at du henter ledige tider, og avslutt ALLTID med [BOOK] pa en helt egen linje.
-- Eksempel: "Her er ledige tider for deg denne uken:\n[BOOK]"
-- Skriv ALDRI at du ikke har tilgang til kalenderen - du kan alltid hente og vise ledige tider.
+- Nar kunden spor om booking, ledig tid, eller vil bestille time: si kort at du sjekker, og avslutt ALLTID med [BOOK] pa en helt egen linje.
+- Eksempel: "Jeg sjekker ledige tider for deg!\n[BOOK]"
+- Skriv ALDRI "her er ledige tider" - du vet ikke om det finnes tider for nar kunden spor.
+- Skriv ALDRI at du ikke har tilgang til kalenderen - du kan alltid sjekke ledige tider.
 - Skriv ALDRI at du har booket eller bekreftet en time - kunden klikker selv pa tidspunktet.
 
 Kontaktinformasjon:
@@ -111,32 +112,40 @@ function parseDagFraMelding(melding) {
 }
 
 async function hentLedigeTider(onsketDag = null) {
-  if (!CAL_API_KEY || !CAL_EVENT_TYPE_ID) return null;
+  if (!CAL_API_KEY || !CAL_EVENT_TYPE_ID) {
+    console.error("[CAL] Mangler CAL_API_KEY eller CAL_EVENT_TYPE_ID");
+    return null;
+  }
   try {
-    const now  = new Date(Date.now() + 5 * 60 * 1000);
+    const now   = new Date(Date.now() + 5 * 60 * 1000);
     const slutt = new Date(now);
-    slutt.setDate(slutt.getDate() + 7);
+    slutt.setDate(slutt.getDate() + 14); // 14 dager for å finne nok tider
 
-    const url = `${CAL_BASE}/slots/available` +
-      `?eventTypeId=${CAL_EVENT_TYPE_ID}` +
-      `&startTime=${now.toISOString()}` +
-      `&endTime=${slutt.toISOString()}` +
-      `&timeZone=Europe/Oslo`;
+    const params = new URLSearchParams({
+      eventTypeId: String(CAL_EVENT_TYPE_ID),
+      startTime:   now.toISOString(),
+      endTime:     slutt.toISOString(),
+      timeZone:    "Europe/Oslo"
+    });
+
+    const url = `${CAL_BASE}/slots/available?${params}`;
+    console.log("[CAL] Henter slots:", url);
 
     const res  = await fetch(url, {
       headers: {
-        "Authorization": `Bearer ${CAL_API_KEY}`,
-        "cal-api-version": "2024-08-13"
+        "Authorization":    `Bearer ${CAL_API_KEY}`,
+        "cal-api-version":  "2024-08-13"
       }
     });
-    const data = await res.json();
 
-    // MIDLERTIDIG DEBUG
+    const raw  = await res.text();
     console.log("[CAL DEBUG] HTTP status:", res.status);
-    console.log("[CAL DEBUG] Råsvar:", JSON.stringify(data).slice(0, 600));
+    console.log("[CAL DEBUG] Råsvar:", raw.slice(0, 800));
+
+    const data = JSON.parse(raw);
 
     if (data.status !== "success") {
-      console.error("[CAL] Feil fra API:", JSON.stringify(data));
+      console.error("[CAL] API feil:", JSON.stringify(data));
       return null;
     }
 
@@ -457,9 +466,12 @@ app.post("/chat", rateLimit, async (req, res) => {
       console.log("[CAL] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
     }
 
-    const bookingUrl = (hasBookTag || userWantsBooking) ? (CONFIG.bookinglink || null) : null;
+    // Vis bookingUrl-knapp kun som fallback når Cal.com ikke returnerte tider
+    const bookingUrl = (hasBookTag || userWantsBooking) && !ledigeTider
+      ? (CONFIG.bookinglink || null)
+      : null;
 
-    console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" ${hasBookTag ? "[BOOK]" : ""}`);
+    console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" | tider: ${ledigeTider?.length ?? "null"}`);
 
     loggSamtale({ navn: safeName, melding: message, svar: reply, bookingVist: !!bookingUrl });
 
