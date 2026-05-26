@@ -90,6 +90,16 @@ const CAL_API_KEY      = process.env.CAL_API_KEY;
 const CAL_EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID);
 const CAL_BASE         = "https://api.cal.eu/v2";
 
+// Parser klokkeslett fra melding, f.eks. "12:00" eller "kl 14"
+function parseTidFraMelding(melding) {
+  const m = melding.match(/\b(\d{1,2})[:.]?(\d{2})?\s*(?:kl\.?)?\b/);
+  if (!m) return null;
+  const timer = parseInt(m[1]);
+  const min   = parseInt(m[2] || "0");
+  if (timer < 6 || timer > 22) return null;
+  return { timer, min };
+}
+
 // Parser hvilken dag brukeren spør om
 function parseDagFraMelding(melding) {
   const lower = melding.toLowerCase();
@@ -111,7 +121,7 @@ function parseDagFraMelding(melding) {
   return null;
 }
 
-async function hentLedigeTider(onsketDag = null) {
+async function hentLedigeTider(onsketDag = null, onsketTid = null) {
   if (!CAL_API_KEY || !CAL_EVENT_TYPE_ID) {
     console.error("[CAL] Mangler CAL_API_KEY eller CAL_EVENT_TYPE_ID");
     return null;
@@ -164,9 +174,37 @@ async function hentLedigeTider(onsketDag = null) {
 
     if (onsketDag) {
       const onsketStr = onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" });
-      utvalg = alle.filter(t =>
+      let dagFiltrert = alle.filter(t =>
         new Date(t.tid).toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }) === onsketStr
-      ).slice(0, 6);
+      );
+
+      // Hvis spesifikt klokkeslett er ønsket, finn nærmeste ledige tid
+      if (onsketTid && dagFiltrert.length > 0) {
+        const match = dagFiltrert.find(t => {
+          const d = new Date(t.tid);
+          const h = parseInt(d.toLocaleString("no-NO", { hour: "numeric", timeZone: "Europe/Oslo" }));
+          const m = d.getMinutes();
+          return h === onsketTid.timer && m === onsketTid.min;
+        });
+        if (match) {
+          utvalg = [match];
+          console.log(`[CAL] Eksakt tid funnet: ${match.tid}`);
+        } else {
+          // Finn to nærmeste tilgjengelige tider rundt ønsket tidspunkt
+          const onskMs = onsketTid.timer * 60 + onsketTid.min;
+          dagFiltrert.sort((a, b) => {
+            const da = new Date(a.tid), db = new Date(b.tid);
+            const ha = da.getHours() * 60 + da.getMinutes();
+            const hb = db.getHours() * 60 + db.getMinutes();
+            return Math.abs(ha - onskMs) - Math.abs(hb - onskMs);
+          });
+          utvalg = dagFiltrert.slice(0, 3);
+          console.log(`[CAL] Ønsket tid ikke ledig, viser nærmeste: ${utvalg.length} tider`);
+        }
+      } else {
+        utvalg = dagFiltrert.slice(0, 6);
+      }
+
       console.log(`[CAL] Filtrert til ${onsketStr}: ${utvalg.length} tider`);
       if (utvalg.length === 0) return [];
     } else {
@@ -451,7 +489,7 @@ app.post("/chat", rateLimit, async (req, res) => {
     const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
 
     const hasBookTag      = rawReply.includes("[BOOK]");
-    const bookingKeywords = ["book", "bestill", "time", "ledig", "reserv", "plass", "avtale", "nar kan", "naar kan", "naar", "when"];
+    const bookingKeywords = ["book", "bestill", "bestille", "reserv", "plass", "avtale", "ledige tider", "ledig tid", "nar kan jeg", "naar kan jeg", "when can"];
     const userWantsBooking = bookingKeywords.some(kw => message.toLowerCase().includes(kw));
     const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
 
@@ -459,10 +497,10 @@ app.post("/chat", rateLimit, async (req, res) => {
     if (hasBookTag || userWantsBooking) {
       console.log("[CAL] Henter ledige tider...");
       const onsketDag = parseDagFraMelding(message);
-      if (onsketDag) {
-        console.log("[CAL] Ønsket dag:", onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }));
-      }
-      ledigeTider = await hentLedigeTider(onsketDag);
+      const onsketTid = parseTidFraMelding(message);
+      if (onsketDag) console.log("[CAL] Ønsket dag:", onsketDag.toLocaleDateString("no-NO", { timeZone: "Europe/Oslo" }));
+      if (onsketTid) console.log("[CAL] Ønsket tid:", onsketTid);
+      ledigeTider = await hentLedigeTider(onsketDag, onsketTid);
       console.log("[CAL] Resultat:", ledigeTider ? ledigeTider.length + " tider" : "null");
     }
 
