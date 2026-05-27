@@ -587,6 +587,18 @@
 
           if (!navn || !epost) {
             addMessage('bot', 'Fyll inn navn og e-post i panelet til venstre, og klikk på tidspunktet igjen! 😊');
+            // Marker feltene visuelt
+            if (!navn)  { nameInput.style.borderColor  = '#e05'; setTimeout(() => nameInput.style.borderColor  = '', 2500); }
+            if (!epost) { emailInput.style.borderColor = '#e05'; setTimeout(() => emailInput.style.borderColor = '', 2500); }
+            nameInput.focus();
+            return;
+          }
+          // Valider e-postformat
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) {
+            addMessage('bot', 'E-postadressen ser ikke riktig ut. Sjekk at den er korrekt og prøv igjen.');
+            emailInput.style.borderColor = '#e05';
+            setTimeout(() => emailInput.style.borderColor = '', 2500);
+            emailInput.focus();
             return;
           }
 
@@ -595,6 +607,7 @@
             b.disabled = true; b.style.opacity = '0.4'; b.style.cursor = 'not-allowed';
           });
           btn.style.background = '#b8924a'; btn.style.color = '#fff'; btn.style.opacity = '1';
+          setLocked(true); // Lås input mens booking pågår
           addMessage('bot', `Booker time for ${t.visning}...`);
 
           try {
@@ -614,6 +627,7 @@
                 `✅ Time booket! En bekreftelse er sendt til ${epost}. ` +
                 `Vi gleder oss til å se deg ${t.visning}! 🎉`
               );
+              setLocked(false);
             } else {
               addMessage('bot', `Noe gikk galt: ${data.feil || 'Prøv igjen eller ring oss direkte.'}`);
               wrap.querySelectorAll('button').forEach(b => {
@@ -621,10 +635,16 @@
               });
             }
           } catch (err) {
-            addMessage('bot', 'Kunne ikke fullføre bookingen. Prøv igjen eller ring oss direkte.');
+            if (err.name === 'AbortError') {
+              addMessage('bot', 'Bookingen tok for lang tid. Prøv igjen eller ring oss direkte.');
+            } else {
+              addMessage('bot', 'Kunne ikke fullføre bookingen. Prøv igjen eller ring oss direkte.');
+            }
             wrap.querySelectorAll('button').forEach(b => {
               b.disabled = false; b.style.opacity = '1'; b.style.cursor = 'pointer';
             });
+          } finally {
+            setLocked(false); // Alltid lås opp, også ved feil
           }
         });
 
@@ -654,7 +674,8 @@
     }
 
     function removeTyping() {
-      document.getElementById('typing')?.remove();
+      // Liten forsinkelse for å unngå race condition ved rask server-respons
+      requestAnimationFrame(() => document.getElementById('typing')?.remove());
     }
 
     function setLocked(locked) {
@@ -716,13 +737,13 @@
           history.push({ role: 'assistant', content: reply });
         }
 
-        // Trim history to last 20 messages
-        if (history.length > 20) history = history.slice(-20);
+        // Trim til 16 (8 par) – matcher server sin grense på 14 + buffer
+        if (history.length > 16) history = history.slice(-16);
 
         statusEl.textContent = '';
 
       } catch (err) {
-        removeTyping();
+        removeTyping(); // alltid fjern typing, også ved timeout
         if (err.name === 'AbortError') {
           addMessage('bot', 'Det tok for lang tid å svare. Prøv igjen – er du fortsatt der? 😊');
         } else {
@@ -744,7 +765,7 @@
           <div class="avatar bot">SK</div>
           <div class="bubble bot">Hei! Jeg er den automatiske assistenten til Studio Klipp. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!</div>
         </div>`;
-      statusEl.textContent = '';
+      statusEl.innerHTML = '';
       messageInput.value = '';
       messageInput.focus();
     }
