@@ -9,7 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Les konfigurasjon ─────────────────────────────────────────────────────────
 
-const CONFIG = JSON.parse(readFileSync(path.join(__dirname, "config.json"), "utf-8"));
+let CONFIG;
+try {
+  CONFIG = JSON.parse(readFileSync(path.join(__dirname, "config.json"), "utf-8"));
+} catch (err) {
+  console.error("[FEIL] Kunne ikke lese config.json:", err.message);
+  process.exit(1); // Avslutt tydelig med feilkode
+}
 
 // ── Supabase ──────────────────────────────────────────────────────────────────
 
@@ -97,9 +103,13 @@ const SYSTEM_PROMPT = byggSystemPrompt(CONFIG);
 
 // ── Calendly ──────────────────────────────────────────────────────────────────
 
-const CAL_API_KEY      = process.env.CAL_API_KEY;
-const CAL_EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID);
-const CAL_BASE         = "https://api.cal.eu/v2";
+const CAL_API_KEY       = process.env.CAL_API_KEY;
+const CAL_EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID) || 0;
+const CAL_BASE          = "https://api.cal.eu/v2";
+
+// Advar ved oppstart hvis Cal.com-konfig mangler
+if (!CAL_API_KEY)        console.warn("[ADVARSEL] CAL_API_KEY er ikke satt – booking vil ikke fungere");
+if (!CAL_EVENT_TYPE_ID)  console.warn("[ADVARSEL] CAL_EVENT_TYPE_ID er ikke satt – booking vil ikke fungere");
 
 // Parser klokkeslett fra melding – krever "kl", ":" eller "."-format for å unngå falske treff
 // Støtter: "kl 14", "kl. 14:30", "14:00", "14.00", "halv 3" (=14:30), "kvart over 2" (=14:15)
@@ -111,7 +121,12 @@ function parseTidFraMelding(melding) {
   if (halvMatch) {
     const tallord = { en:1,ett:1,to:2,tre:3,fire:4,fem:5,seks:6,sju:7,atte:8,åtte:8,ni:9,ti:10,elleve:11,tolv:12 };
     const t = tallord[halvMatch[1]];
-    if (t) return { timer: t - 1 + 12 > 22 ? t - 1 : t - 1 + (t <= 7 ? 12 : 0), min: 30 };
+    if (t) {
+      // Prøv ettermiddag først (mer sannsynlig for frisørsalong): halv tre = 14:30
+      const ettermiddag = (t - 1) + 12;
+      const timer = (ettermiddag >= 6 && ettermiddag <= 22) ? ettermiddag : (t - 1);
+      return { timer, min: 30 };
+    }
   }
 
   // Krev "kl", ":", eller "." mellom timer og minutt
@@ -167,12 +182,16 @@ async function hentLedigeTider(onsketDag = null, onsketTid = null) {
     const url = `${CAL_BASE}/slots/available?${params}`;
     console.log("[CAL] Henter slots:", url);
 
+    const calCtrl = new AbortController();
+    const calTimeout = setTimeout(() => calCtrl.abort(), 8000); // 8 sek
     const res  = await fetch(url, {
       headers: {
         "Authorization":    `Bearer ${CAL_API_KEY}`,
         "cal-api-version":  "2024-08-13"
-      }
+      },
+      signal: calCtrl.signal
     });
+    clearTimeout(calTimeout);
 
     const raw  = await res.text();
     const data = JSON.parse(raw);
@@ -214,14 +233,19 @@ async function hentLedigeTider(onsketDag = null, onsketTid = null) {
           utvalg = [match];
           console.log(`[CAL] Eksakt tid funnet: ${match.tid}`);
         } else {
-          // Finn to nærmeste tilgjengelige tider rundt ønsket tidspunkt
+          // Finn nærmeste tilgjengelige tider rundt ønsket tidspunkt
+          // Bruk Oslo-tid (ikke UTC) for korrekt sammenligning
           const onskMs = onsketTid.timer * 60 + onsketTid.min;
-          dagFiltrert.sort((a, b) => {
-            const da = new Date(a.tid), db = new Date(b.tid);
-            const ha = da.getHours() * 60 + da.getMinutes();
-            const hb = db.getHours() * 60 + db.getMinutes();
-            return Math.abs(ha - onskMs) - Math.abs(hb - onskMs);
-          });
+          const tilMin = tid => {
+            const str = new Date(tid).toLocaleString("no-NO", {
+              hour: "2-digit", minute: "2-digit", timeZone: "Europe/Oslo"
+            });
+            const [h, m] = str.split(":").map(Number);
+            return h * 60 + m;
+          };
+          dagFiltrert.sort((a, b) =>
+            Math.abs(tilMin(a.tid) - onskMs) - Math.abs(tilMin(b.tid) - onskMs)
+          );
           utvalg = dagFiltrert.slice(0, 3);
           console.log(`[CAL] Ønsket tid ikke ledig, viser nærmeste: ${utvalg.length} tider`);
         }
@@ -260,6 +284,8 @@ async function hentLedigeTider(onsketDag = null, onsketTid = null) {
 
 async function opprettBooking({ navn, epost, tid }) {
   try {
+    const bookCtrl    = new AbortController();
+    const bookTimeout = setTimeout(() => bookCtrl.abort(), 10000); // 10 sek
     const res = await fetch(`${CAL_BASE}/bookings`, {
       method: "POST",
       headers: {
@@ -276,8 +302,10 @@ async function opprettBooking({ navn, epost, tid }) {
           timeZone: "Europe/Oslo",
           language: "no"
         }
-      })
+      }),
+      signal: bookCtrl.signal
     });
+    clearTimeout(bookTimeout);
     const data = await res.json();
     if (data.status !== "success") {
       console.error("[CAL] Booking feilet:", JSON.stringify(data));
@@ -296,6 +324,14 @@ async function opprettBooking({ navn, epost, tid }) {
 const SENDGRID_KEY = process.env.SENDGRID_KEY;
 const EPOST_FRA    = "mathias.s.vinnes@gmail.com";
 const EPOST_TIL    = "asiakimchi25@gmail.com";
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 async function sendBookingVarsel({ navn, melding }) {
   if (!SENDGRID_KEY) return;
@@ -317,13 +353,11 @@ async function sendBookingVarsel({ navn, melding }) {
               <h2 style="color:#0d0d0d;margin-bottom:8px;">Ny bookingforespørsel</h2>
               <p style="color:#666;margin-bottom:20px;">En kunde ønsker å booke time hos ${CONFIG.bedrift}.</p>
               <div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e8e2d9;">
-                <p><strong>Navn:</strong> ${navn || "Ukjent"}</p>
-                <p><strong>Melding:</strong> ${melding}</p>
+                <p><strong>Navn:</strong> ${escapeHtml(navn || "Ukjent")}</p>
+                <p><strong>Melding:</strong> ${escapeHtml(melding)}</p>
                 <p><strong>Tidspunkt:</strong> ${new Date().toLocaleString("no-NO")}</p>
               </div>
-              <a href="${CONFIG.bookinglink}" style="display:inline-block;margin-top:20px;background:#b8924a;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
-                Åpne booking
-              </a>
+              ${CONFIG.bookinglink ? `<a href="${CONFIG.bookinglink}" style="display:inline-block;margin-top:20px;background:#b8924a;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">Åpne booking</a>` : ''}
             </div>
           `
         }]
@@ -344,7 +378,20 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
-app.use(cors({ origin: "*" }));
+// Offentlige endepunkter (chat-widget kan kalles fra hvor som helst)
+const corsPublic = cors({ origin: "*" });
+// Sensitive endepunkter – bare fra samme opprinnelse eller kjente domener
+const corsPrivat = cors({
+  origin: (origin, callback) => {
+    const tillatListe = [
+      undefined,           // direkte server-til-server (ingen origin)
+      "https://ai-chat-backend-6.onrender.com"
+    ];
+    if (!origin || tillatListe.includes(origin)) callback(null, true);
+    else callback(new Error("CORS ikke tillatt"));
+  }
+});
+
 app.use(express.json({ limit: "10kb" }));
 
 // Enkel rate limiter (maks 20 req/min per IP)
@@ -357,34 +404,34 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-function rateLimit(req, res, next) {
-  const ip = req.ip;
-  const now = Date.now();
-  const windowMs = 60_000;
-  const maxRequests = 20;
-
-  const entry = rateLimitMap.get(ip) || { count: 0, start: now };
-  if (now - entry.start > windowMs) {
-    entry.count = 1;
-    entry.start = now;
-  } else {
-    entry.count++;
-  }
-  rateLimitMap.set(ip, entry);
-
-  if (entry.count > maxRequests) {
-    return res.status(429).json({ reply: "For mange foresporsler. Prov igjen om litt." });
-  }
-  next();
+function lagRateLimit(maxRequests, prefix = "") {
+  return function rateLimit(req, res, next) {
+    const key = prefix + req.ip;
+    const now = Date.now();
+    const entry = rateLimitMap.get(key) || { count: 0, start: now };
+    if (now - entry.start > 60_000) {
+      entry.count = 1; entry.start = now;
+    } else {
+      entry.count++;
+    }
+    rateLimitMap.set(key, entry);
+    if (entry.count > maxRequests) {
+      return res.status(429).json({ ok: false, reply: "For mange foresporsler. Prov igjen om litt." });
+    }
+    next();
+  };
 }
+
+const rateLimit      = lagRateLimit(20, "chat:");   // 20 chat-meldinger/min
+const rateLimitBook  = lagRateLimit(5,  "book:");   // 5 bookinger/min (separat)
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-app.get("/", (_req, res) => {
+app.get("/", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "chat.html"));
 });
 
-app.get("/widget.js", (_req, res) => {
+app.get("/widget.js", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "widget.js"));
 });
 
@@ -396,7 +443,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", bedrift: CONFIG.bedrift });
 });
 
-app.post("/chat", rateLimit, async (req, res) => {
+app.post("/chat", corsPublic, rateLimit, async (req, res) => {
   const { message, name, history = [] } = req.body;
 
   if (!message || typeof message !== "string") {
@@ -419,8 +466,8 @@ app.post("/chat", rateLimit, async (req, res) => {
   const safeHistory = Array.isArray(history)
     ? history
         .filter(m => allowedRoles.has(m?.role) && typeof m?.content === "string")
-        .slice(-10)
-        .map(m => ({ role: m.role, content: m.content.slice(0, 500) }))
+        .slice(-14)          // behold 7 par (user+assistant) for god kontekst
+        .map(m => ({ role: m.role, content: m.content.slice(0, 800) })) // litt mer plass til tids-kontekst
     : [];
 
   const messages = [
@@ -430,6 +477,8 @@ app.post("/chat", rateLimit, async (req, res) => {
   ];
 
   try {
+    const aiCtrl    = new AbortController();
+    const aiTimeout = setTimeout(() => aiCtrl.abort(), 12000); // 12 sek
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -442,7 +491,9 @@ app.post("/chat", rateLimit, async (req, res) => {
         max_tokens: 300,
         temperature: 0.6,
       }),
+      signal: aiCtrl.signal
     });
+    clearTimeout(aiTimeout);
 
     if (!openaiRes.ok) {
       const errBody = await openaiRes.json().catch(() => ({}));
@@ -474,12 +525,15 @@ app.post("/chat", rateLimit, async (req, res) => {
       ? (CONFIG.bookinglink || null)
       : null;
 
-    console.log(`[CHAT] [${new Date().toISOString()}] ${safeName ?? "Ukjent"}: "${message}" -> "${reply}" | tider: ${ledigeTider?.length ?? "null"}`);
+    const logNavn = safeName ?? "Ukjent";
+    const logMsg  = message.length > 80 ? message.slice(0, 80) + "…" : message;
+    const logSvar = reply.length > 80   ? reply.slice(0, 80)   + "…" : reply;
+    console.log(`[CHAT] [${new Date().toISOString()}] ${logNavn}: "${logMsg}" -> "${logSvar}" | tider: ${ledigeTider?.length ?? "null"}`);
 
-    loggSamtale({ navn: safeName, melding: message, svar: reply, bookingVist: !!bookingUrl });
-
+    // Logging og e-post er ikke kritisk – kjør asynkront uten å blokkere svaret
+    loggSamtale({ navn: safeName, melding: message, svar: reply, bookingVist: !!bookingUrl }).catch(() => {});
     if (bookingUrl) {
-      sendBookingVarsel({ navn: safeName, melding: message });
+      sendBookingVarsel({ navn: safeName, melding: message }).catch(() => {});
     }
 
     return res.json({ reply, bookingUrl, ledigeTider });
@@ -491,11 +545,14 @@ app.post("/chat", rateLimit, async (req, res) => {
 });
 
 // ── /book – opprett Cal.com-booking direkte fra chatten ──────────────────────
-app.post("/book", rateLimit, async (req, res) => {
+app.post("/book", corsPublic, rateLimitBook, async (req, res) => {
   const { navn, epost, tid } = req.body;
 
   if (!navn || !epost || !tid) {
     return res.status(400).json({ ok: false, feil: "Navn, e-post og tidspunkt er påkrevd." });
+  }
+  if (typeof navn !== "string" || typeof epost !== "string" || typeof tid !== "string") {
+    return res.status(400).json({ ok: false, feil: "Ugyldig datatype i forespørsel." });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) {
     return res.status(400).json({ ok: false, feil: "Ugyldig e-postadresse." });
@@ -516,14 +573,14 @@ app.post("/book", rateLimit, async (req, res) => {
     return res.status(502).json({ ok: false, feil: resultat.feil });
   }
 
-  // Send bookingvarsel til salongen
-  sendBookingVarsel({ navn, melding: `Ny booking: ${tid}` });
+  // Send bookingvarsel til salongen asynkront – ikke blokker svaret til kunden
+  sendBookingVarsel({ navn, melding: `Ny booking: ${tid}` }).catch(() => {});
 
   return res.json({ ok: true });
 });
 
 // Dashboard data endpoint
-app.post("/dashboard-data", async (req, res) => {
+app.post("/dashboard-data", corsPrivat, async (req, res) => {
   const { nokkel } = req.body;
   if (!nokkel) return res.status(400).json({ error: "Nokkel mangler." });
   try {
@@ -548,7 +605,7 @@ app.post("/dashboard-data", async (req, res) => {
 });
 
 // Slett samtale
-app.delete("/slett-samtale", async (req, res) => {
+app.delete("/slett-samtale", corsPrivat, async (req, res) => {
   const { id, nokkel } = req.body;
   if (!id || !nokkel) return res.status(400).json({ error: "Mangler id eller nokkel." });
   try {
