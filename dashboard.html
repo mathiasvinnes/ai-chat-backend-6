@@ -4,140 +4,117 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard – AI-assistent</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
-      --ink: #0d0d0d; --ink-2: #3a3a3a; --ink-3: #7a7a7a;
-      --paper: #f5f0e8; --paper-2: #ede8df; --paper-3: #e4ddd1;
-      --gold: #b8924a; --white: #ffffff; --danger: #b03030;
-      --r: 16px; --shadow: 0 8px 32px rgba(13,13,13,0.10);
+      --ink: #0d0d0d;
+      --ink-2: #3a3a3a;
+      --ink-3: #7a7a7a;
+      --paper: #f5f0e8;
+      --paper-2: #ede8df;
+      --paper-3: #e4ddd1;
+      --gold: #b8924a;
+      --gold-light: #fef3c7;
+      --gold-dark: #92400e;
+      --white: #ffffff;
+      --red: #ef4444;
+      --red-light: #fee2e2;
+      --r: 16px;
+      --shadow: 0 8px 32px rgba(13,13,13,0.10);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
 
-    /* Login */
+    /* ── Login ── */
     #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
     .login-box { background: var(--ink); border-radius: 24px; padding: 48px 40px; width: min(100%, 420px); box-shadow: 0 24px 64px rgba(13,13,13,0.2); }
     .login-logo { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--white); margin-bottom: 6px; }
     .login-sub { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 36px; }
     .login-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block; }
-    .login-input { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 12px 14px; margin-bottom: 18px; }
+    .login-input { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 12px 14px; margin-bottom: 18px; transition: border-color 0.15s; }
     .login-input:focus { outline: none; border-color: var(--gold); }
     .login-input::placeholder { color: rgba(255,255,255,0.2); }
-    .login-btn { width: 100%; background: var(--gold); color: var(--white); border: none; border-radius: 10px; padding: 13px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .login-btn { width: 100%; background: var(--gold); color: var(--white); border: none; border-radius: 10px; padding: 13px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
     .login-btn:hover { opacity: 0.88; }
+    .login-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .login-error { margin-top: 14px; font-size: 13px; color: #f87171; text-align: center; }
 
-    /* Dashboard */
+    /* ── Dashboard ── */
     #dashboard-screen { display: none; }
     .topbar { background: var(--ink); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
     .topbar-logo { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--white); }
     .topbar-right { display: flex; align-items: center; gap: 16px; }
     .topbar-bedrift { font-size: 13px; color: rgba(255,255,255,0.5); }
-    .logout-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 14px; cursor: pointer; }
+    .logout-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 14px; cursor: pointer; transition: background 0.15s; }
+    .logout-btn:hover { background: rgba(255,255,255,0.14); }
 
     .main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
     .page-title { font-family: 'DM Serif Display', serif; font-size: 32px; margin-bottom: 6px; }
     .page-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 32px; }
 
     /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
     .stat-card { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); padding: 24px; box-shadow: var(--shadow); }
     .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
-    .stat-value { font-family: 'DM Serif Display', serif; font-size: 40px; line-height: 1; }
+    .stat-value { font-family: 'DM Serif Display', serif; font-size: 40px; line-height: 1; color: var(--ink); }
     .stat-value.gold { color: var(--gold); }
 
-    /* Filter */
-    .filter-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
-    .filter-input { background: var(--white); border: 1px solid var(--paper-3); border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; flex: 1; min-width: 200px; }
+    /* Toolbar */
+    .toolbar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+    .filter-input { background: var(--white); border: 1px solid var(--paper-3); border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); flex: 1; min-width: 200px; }
     .filter-input:focus { outline: none; border-color: var(--gold); }
-    .filter-select { background: var(--white); border: 1px solid var(--paper-3); border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
+    .filter-select { background: var(--white); border: 1px solid var(--paper-3); border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; }
+    .export-btn { background: var(--ink); color: var(--white); border: none; border-radius: 10px; padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+    .export-btn:hover { opacity: 0.8; }
 
-    /* Dag-gruppering */
-    .dag-gruppe { margin-bottom: 24px; }
-    .dag-header {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--ink); color: var(--white);
-      padding: 14px 20px; border-radius: 12px 12px 0 0;
-      cursor: pointer; user-select: none;
-    }
-    .dag-header:hover { background: #1a1a1a; }
-    .dag-header-left { display: flex; align-items: center; gap: 12px; }
-    .dag-dato { font-family: 'DM Serif Display', serif; font-size: 18px; }
-    .dag-antall { font-size: 12px; color: rgba(255,255,255,0.5); }
-    .dag-booking-count { background: var(--gold); color: var(--white); border-radius: 999px; font-size: 11px; font-weight: 600; padding: 3px 10px; }
-    .dag-toggle { font-size: 18px; transition: transform 0.2s; }
-    .dag-toggle.lukket { transform: rotate(-90deg); }
+    /* Table */
+    .table-wrap { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--paper-2); }
+    th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 20px; border-bottom: 1px solid var(--paper-3); }
+    td { padding: 14px 20px; font-size: 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; line-height: 1.5; }
+    tr:last-child td { border-bottom: none; }
+    tr.data-row { cursor: pointer; transition: background 0.1s; }
+    tr.data-row:hover td { background: var(--paper); }
+    .td-tid { color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+    .td-melding { max-width: 220px; }
+    .td-svar { max-width: 280px; color: var(--ink-2); }
+    .td-tekst { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .booking-badge { display: inline-block; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 600; padding: 3px 10px; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; }
+    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; }
+    .slett-btn:hover { background: var(--red-light); color: var(--red); }
 
-    .dag-innhold { background: var(--white); border: 1px solid var(--paper-3); border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; }
+    /* Paginering */
+    .paginering { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-top: 1px solid var(--paper-2); font-size: 13px; color: var(--ink-3); flex-wrap: wrap; gap: 12px; }
+    .pag-knapper { display: flex; gap: 8px; }
+    .pag-btn { background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 8px; padding: 6px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+    .pag-btn:hover:not(:disabled) { background: var(--paper-3); }
+    .pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pag-btn.aktiv { background: var(--ink); color: var(--white); border-color: var(--ink); }
 
-    /* Samtale-rader */
-    .samtale-rad {
-      display: grid;
-      grid-template-columns: 100px 120px 1fr 1fr 90px 44px;
-      gap: 12px;
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--paper-2);
-      align-items: start;
-      font-size: 13.5px;
-      line-height: 1.5;
-    }
-    .samtale-rad:last-child { border-bottom: none; }
-    .samtale-rad:hover { background: var(--paper); }
+    /* Modal */
+    .modal-bg { position: fixed; inset: 0; background: rgba(13,13,13,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .modal-bg.vis { opacity: 1; pointer-events: all; }
+    .modal { background: var(--white); border-radius: 20px; padding: 32px; width: min(100%, 560px); max-height: 80vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(13,13,13,0.25); transform: translateY(12px); transition: transform 0.2s; }
+    .modal-bg.vis .modal { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .modal-tittel { font-family: 'DM Serif Display', serif; font-size: 22px; }
+    .modal-lukk { background: var(--paper-2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .modal-lukk:hover { background: var(--paper-3); }
+    .modal-meta { font-size: 12px; color: var(--ink-3); margin-bottom: 20px; }
+    .modal-seksjon { margin-bottom: 20px; }
+    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+    .modal-tekst { font-size: 14px; line-height: 1.6; background: var(--paper); border-radius: 10px; padding: 14px 16px; }
 
-    .thead-rad {
-      display: grid;
-      grid-template-columns: 100px 120px 1fr 1fr 90px 44px;
-      gap: 12px;
-      padding: 10px 20px;
-      background: var(--paper-2);
-      border-bottom: 1px solid var(--paper-3);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--ink-3);
-    }
-
-    .col-tid { color: var(--ink-3); font-size: 12px; }
-    .col-melding { color: var(--ink); }
-    .col-svar { color: var(--ink-2); }
-    .booking-badge { display: inline-block; background: #fef3c7; color: #92400e; border-radius: 999px; font-size: 11px; font-weight: 600; padding: 3px 10px; }
-
-    /* Slett-knapp */
-    .slett-btn {
-      background: none; border: 1px solid #ddd; border-radius: 8px;
-      color: var(--ink-3); font-size: 13px; padding: 5px 8px;
-      cursor: pointer; transition: all 0.15s; white-space: nowrap;
-    }
-    .slett-btn:hover { background: #fee2e2; border-color: #fca5a5; color: var(--danger); }
-
-    /* Bekreft-dialog */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 999; }
-    .modal-overlay.vis { display: flex; }
-    .modal { background: var(--white); border-radius: 20px; padding: 32px; width: min(100%, 420px); box-shadow: 0 24px 64px rgba(0,0,0,0.2); }
-    .modal h3 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 10px; }
-    .modal p { font-size: 14px; color: var(--ink-2); margin-bottom: 24px; line-height: 1.5; }
-    .modal-knapper { display: flex; gap: 10px; justify-content: flex-end; }
-    .modal-avbryt { background: var(--paper-2); border: none; border-radius: 10px; padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
-    .modal-slett { background: var(--danger); color: var(--white); border: none; border-radius: 10px; padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
-
-    .tom-melding { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); }
-
-    /* Grafer */
-    .grafer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
-    .graf-kort { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); padding: 24px; box-shadow: var(--shadow); }
-    .graf-tittel { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px; }
-    .graf-canvas { position: relative; height: 180px; }
-    .ord-liste { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-    .ord-badge { background: var(--paper-2); border-radius: 999px; padding: 5px 12px; font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
-    .ord-badge strong { color: var(--gold); font-size: 13px; }
-    @media (max-width: 700px) { .grafer-grid { grid-template-columns: 1fr; } }
-
-    @media (max-width: 800px) {
-      .samtale-rad, .thead-rad { grid-template-columns: 80px 1fr 1fr 44px; }
-      .col-navn, .col-svar { display: none; }
+    @media (max-width: 700px) {
+      .topbar { padding: 14px 16px; }
+      .main { padding: 24px 16px; }
+      th, td { padding: 12px 14px; }
+      .td-svar { display: none; }
     }
   </style>
 </head>
@@ -147,8 +124,10 @@
   <div class="login-box">
     <div class="login-logo">AI-assistent</div>
     <div class="login-sub">Logg inn for å se dine samtaler</div>
-    <label class="login-label">Bedriftsnøkkel</label>
-    <input class="login-input" id="nokkel" type="password" placeholder="Skriv inn nøkkelen din" />
+    <label class="login-label">E-post</label>
+    <input class="login-input" id="epost" type="email" placeholder="din@epost.no" />
+    <label class="login-label">Passord</label>
+    <input class="login-input" id="passord" type="password" placeholder="••••••••" />
     <button class="login-btn" id="login-btn">Logg inn</button>
     <div class="login-error" id="login-feil"></div>
   </div>
@@ -164,322 +143,337 @@
   </div>
   <div class="main">
     <div class="page-title">Samtalelogg</div>
-    <div class="page-sub" id="page-sub"></div>
+    <div class="page-sub" id="page-sub">Oversikt over alle kundesamtaler</div>
+    <div id="debug-panel" style="display:none;background:#1e1e2e;color:#cdd6f4;font-family:monospace;font-size:12px;border-radius:12px;padding:16px;margin-bottom:24px;line-height:1.8;white-space:pre-wrap;"></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Totalt samtaler</div><div class="stat-value" id="stat-totalt">–</div></div>
       <div class="stat-card"><div class="stat-label">Bookingforespørsler</div><div class="stat-value gold" id="stat-booking">–</div></div>
       <div class="stat-card"><div class="stat-label">Siste 7 dager</div><div class="stat-value" id="stat-uke">–</div></div>
+      <div class="stat-card"><div class="stat-label">Konverteringsrate</div><div class="stat-value gold" id="stat-rate">–</div></div>
     </div>
-    <div class="filter-row">
-      <input class="filter-input" id="sok" placeholder="Søk i meldinger..." type="text" />
+    <div class="toolbar">
+      <input class="filter-input" id="sok" placeholder="Søk i meldinger, navn..." type="text" />
       <select class="filter-select" id="filter-booking">
         <option value="alle">Alle samtaler</option>
         <option value="booking">Kun bookingforespørsler</option>
       </select>
+      <button class="export-btn" id="export-btn">↓ Eksporter CSV</button>
     </div>
-    <!-- Grafer -->
-    <div class="grafer-grid">
-      <div class="graf-kort">
-        <div class="graf-tittel">Samtaler siste 14 dager</div>
-        <div class="graf-canvas"><canvas id="graf-samtaler"></canvas></div>
-      </div>
-      <div class="graf-kort">
-        <div class="graf-tittel">Bookingforespørsler siste 14 dager</div>
-        <div class="graf-canvas"><canvas id="graf-booking"></canvas></div>
-      </div>
-      <div class="graf-kort">
-        <div class="graf-tittel">Vanligste spørsmål</div>
-        <div id="ord-sky" class="ord-liste"></div>
-      </div>
-      <div class="graf-kort">
-        <div class="graf-tittel">Fordeling av henvendelser</div>
-        <div class="graf-canvas"><canvas id="graf-fordeling"></canvas></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tidspunkt</th>
+            <th>Navn</th>
+            <th>Melding</th>
+            <th>Svar</th>
+            <th>Booking</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabell-body">
+          <tr><td colspan="6" class="empty">Laster samtaler...</td></tr>
+        </tbody>
+      </table>
+      <div class="paginering" id="paginering" style="display:none">
+        <span id="pag-info"></span>
+        <div class="pag-knapper" id="pag-knapper"></div>
       </div>
     </div>
-
-    <div id="samtale-liste"></div>
   </div>
 </div>
 
-<!-- Bekreft slett-dialog -->
-<div class="modal-overlay" id="modal">
+<!-- Modal for full samtale -->
+<div class="modal-bg" id="modal-bg">
   <div class="modal">
-    <h3>Slett samtale?</h3>
-    <p>Er du sikker på at du vil slette denne samtalen? Dette kan ikke angres.</p>
-    <div class="modal-knapper">
-      <button class="modal-avbryt" id="modal-avbryt">Avbryt</button>
-      <button class="modal-slett" id="modal-bekreft">Slett</button>
+    <div class="modal-header">
+      <div class="modal-tittel" id="modal-navn">Samtale</div>
+      <button class="modal-lukk" id="modal-lukk">✕</button>
+    </div>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-seksjon">
+      <div class="modal-label">Kundens melding</div>
+      <div class="modal-tekst" id="modal-melding"></div>
+    </div>
+    <div class="modal-seksjon">
+      <div class="modal-label">AI-svar</div>
+      <div class="modal-tekst" id="modal-svar"></div>
     </div>
   </div>
 </div>
 
 <script>
-  const BACKEND_URL = "https://ai-chat-backend-6.onrender.com";
+  const SUPABASE_URL      = "https://wdkbgkcyaxphbampqoek.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_5yIjNxZUhEbohNuZqG5FXQ_3Q85svjp";
+  const SERVER_URL        = "https://ai-chat-backend-6.onrender.com";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // ── Escaping – forhindrer XSS ───────────────────────────────────────────────
+  function esc(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // ── DOM-referanser ───────────────────────────────────────────────────────────
   const loginScreen   = document.getElementById("login-screen");
   const dashScreen    = document.getElementById("dashboard-screen");
   const loginBtn      = document.getElementById("login-btn");
   const logoutBtn     = document.getElementById("logout-btn");
   const loginFeil     = document.getElementById("login-feil");
-  const nokkelInput   = document.getElementById("nokkel");
+  const epostInput    = document.getElementById("epost");
+  const passordInput  = document.getElementById("passord");
+  const tabellBody    = document.getElementById("tabell-body");
   const sokInput      = document.getElementById("sok");
   const filterBooking = document.getElementById("filter-booking");
-  const modal         = document.getElementById("modal");
-  const modalAvbryt   = document.getElementById("modal-avbryt");
-  const modalBekreft  = document.getElementById("modal-bekreft");
+  const exportBtn     = document.getElementById("export-btn");
+  const modalBg       = document.getElementById("modal-bg");
+  const pagInfo       = document.getElementById("pag-info");
+  const pagKnapper    = document.getElementById("pag-knapper");
+  const paginering    = document.getElementById("paginering");
 
-  let alleRader = [];
-  let slettId   = null;
-  let aktivNokkel = "";
+  // ── State ────────────────────────────────────────────────────────────────────
+  let alleRader   = [];
+  let filtrerte   = [];
+  let side        = 1;
+  const perSide   = 25;
 
-  // Sjekk om innlogget
-  const lagretNokkel = sessionStorage.getItem("dashboard_nokkel");
-  if (lagretNokkel) loggInn(lagretNokkel, true);
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      await visDashboard(session.user);
+    } else {
+      loginScreen.style.display = "flex";
+      dashScreen.style.display  = "none";
+    }
+  });
 
-  loginBtn.addEventListener("click", () => loggInn(nokkelInput.value.trim(), false));
-  nokkelInput.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
-  logoutBtn.addEventListener("click", () => { sessionStorage.removeItem("dashboard_nokkel"); location.reload(); });
-  modalAvbryt.addEventListener("click", () => { modal.classList.remove("vis"); slettId = null; });
-  modalBekreft.addEventListener("click", bekreftSlett);
+  loginBtn.addEventListener("click", async () => {
+    const epost   = epostInput.value.trim();
+    const passord = passordInput.value;
+    if (!epost || !passord) { loginFeil.textContent = "Fyll inn e-post og passord."; return; }
+    loginBtn.disabled    = true;
+    loginBtn.textContent = "Logger inn...";
+    loginFeil.textContent = "";
+    const { error } = await sb.auth.signInWithPassword({ email: epost, password: passord });
+    if (error) {
+      loginFeil.textContent    = "Feil e-post eller passord.";
+      loginBtn.disabled        = false;
+      loginBtn.textContent     = "Logg inn";
+    }
+  });
 
-  async function loggInn(nokkel, stille) {
-    if (!nokkel) { loginFeil.textContent = "Skriv inn nøkkelen din."; return; }
-    if (!stille) { loginBtn.disabled = true; loginFeil.textContent = ""; }
+  logoutBtn.addEventListener("click", () => sb.auth.signOut());
+  passordInput.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
+
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  const debugPanel = document.getElementById("debug-panel");
+  function dbg(tekst) {
+    debugPanel.style.display = "block";
+    debugPanel.textContent += "▶ " + tekst + "\n";
+    console.log("[DEBUG]", tekst);
+  }
+
+  function visLasteFeil(melding) {
+    tabellBody.innerHTML = `<tr><td colspan="6" class="empty" style="color:#ef4444">${esc(melding)}</td></tr>`;
+  }
+
+  async function visDashboard(user) {
+    loginScreen.style.display = "none";
+    dashScreen.style.display  = "block";
+    dbg("Innlogget som: " + user.email);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/dashboard-data`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nokkel })
-      });
+      dbg("Henter samtaler fra Supabase (uten bedrift-filter)...");
+      tabellBody.innerHTML = `<tr><td colspan="6" class="empty">Henter samtaler…</td></tr>`;
 
-      if (!res.ok) {
-        if (!stille) { loginFeil.textContent = "Feil nøkkel. Prøv igjen."; loginBtn.disabled = false; }
-        else { sessionStorage.removeItem("dashboard_nokkel"); }
+      const { data, error } = await sb
+        .from("samtaler")
+        .select("*")
+        .order("opprettet", { ascending: false })
+        .limit(500);
+
+      if (error) {
+        dbg("FEIL fra Supabase: " + JSON.stringify(error));
+        visLasteFeil("Supabase-feil: " + error.message);
         return;
       }
 
-      const data = await res.json();
-      aktivNokkel = nokkel;
-      sessionStorage.setItem("dashboard_nokkel", nokkel);
-      visDashboard(data);
+      dbg("Ferdig! " + (data ? data.length : 0) + " samtaler lastet.");
+
+      // Hent bedriftsnavn fra første rad
+      const bedrift = (data && data.length > 0)
+        ? data[0].bedrift
+        : user.email;
+
+      dbg("Bedrift: " + bedrift);
+      document.getElementById("topbar-bedrift").textContent = bedrift;
+      document.getElementById("page-sub").textContent = `Samtaler for ${bedrift}`;
+
+      if (data && data.length > 0) {
+        setTimeout(() => { debugPanel.style.display = "none"; }, 3000);
+      }
+
+      alleRader = data || [];
+      oppdaterStats(alleRader);
+      filtrer();
 
     } catch (err) {
-      if (!stille) { loginFeil.textContent = "Kunne ikke koble til serveren."; loginBtn.disabled = false; }
+      dbg("UVENTET FEIL: " + err.message);
+      visLasteFeil("Uventet feil: " + err.message);
     }
-  }
-
-  function visDashboard(data) {
-    loginScreen.style.display = "none";
-    dashScreen.style.display = "block";
-    document.getElementById("topbar-bedrift").textContent = data.bedrift;
-    document.getElementById("page-sub").textContent = `Samtaler for ${data.bedrift}`;
-    alleRader = data.samtaler || [];
-    oppdaterStats(alleRader);
-    visGruppert(alleRader);
-    byggGrafer(alleRader);
   }
 
   function oppdaterStats(data) {
-    document.getElementById("stat-totalt").textContent = data.length;
-    document.getElementById("stat-booking").textContent = data.filter(r => r.booking_vist).length;
+    const bookinger = data.filter(r => r.booking_vist).length;
     const enUkeSiden = new Date(); enUkeSiden.setDate(enUkeSiden.getDate() - 7);
-    document.getElementById("stat-uke").textContent = data.filter(r => new Date(r.opprettet) > enUkeSiden).length;
+    document.getElementById("stat-totalt").textContent  = data.length;
+    document.getElementById("stat-booking").textContent = bookinger;
+    document.getElementById("stat-uke").textContent     = data.filter(r => new Date(r.opprettet) > enUkeSiden).length;
+    document.getElementById("stat-rate").textContent    = data.length
+      ? Math.round(bookinger / data.length * 100) + "%"
+      : "0%";
   }
 
-  function visGruppert(data) {
-    const liste = document.getElementById("samtale-liste");
-    if (!data.length) {
-      liste.innerHTML = `<div class="tom-melding">Ingen samtaler funnet.</div>`;
+  // ── Filtrering og paginering ─────────────────────────────────────────────────
+  function filtrer() {
+    const sok        = sokInput.value.toLowerCase();
+    const kunBooking = filterBooking.value === "booking";
+    filtrerte = alleRader.filter(r =>
+      (r.melding?.toLowerCase().includes(sok) ||
+       r.svar?.toLowerCase().includes(sok)    ||
+       r.navn?.toLowerCase().includes(sok))   &&
+      (!kunBooking || r.booking_vist)
+    );
+    side = 1;
+    visRader();
+  }
+
+  function visRader() {
+    if (!filtrerte.length) {
+      tabellBody.innerHTML = `<tr><td colspan="6" class="empty">Ingen samtaler funnet.</td></tr>`;
+      paginering.style.display = "none";
       return;
     }
 
-    // Grupper per dag
-    const grupper = {};
-    data.forEach(r => {
-      const dag = new Date(r.opprettet).toLocaleDateString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-      if (!grupper[dag]) grupper[dag] = [];
-      grupper[dag].push(r);
+    const start  = (side - 1) * perSide;
+    const sideSli = filtrerte.slice(start, start + perSide);
+    const totSider = Math.ceil(filtrerte.length / perSide);
+
+    tabellBody.innerHTML = sideSli.map(r => {
+      const dato = new Date(r.opprettet).toLocaleString("no-NO", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+      return `<tr class="data-row" data-id="${esc(String(r.id))}">
+        <td class="td-tid">${esc(dato)}</td>
+        <td>${esc(r.navn || "Ukjent")}</td>
+        <td class="td-melding"><div class="td-tekst">${esc(r.melding)}</div></td>
+        <td class="td-svar"><div class="td-tekst">${esc(r.svar)}</div></td>
+        <td>${r.booking_vist ? '<span class="booking-badge">Booking</span>' : "–"}</td>
+        <td><button class="slett-btn" title="Slett samtale" data-id="${esc(String(r.id))}">🗑</button></td>
+      </tr>`;
+    }).join("");
+
+    // Paginering
+    if (totSider > 1) {
+      paginering.style.display = "flex";
+      pagInfo.textContent = `Viser ${start + 1}–${Math.min(start + perSide, filtrerte.length)} av ${filtrerte.length}`;
+      pagKnapper.innerHTML = "";
+
+      const lagBtn = (tekst, aktiv, onClick) => {
+        const b = document.createElement("button");
+        b.className = "pag-btn" + (aktiv ? " aktiv" : "");
+        b.textContent = tekst;
+        b.disabled = aktiv;
+        b.addEventListener("click", onClick);
+        pagKnapper.appendChild(b);
+      };
+
+      lagBtn("← Forrige", side === 1, () => { side--; visRader(); });
+      // Sidetall
+      for (let s = Math.max(1, side - 2); s <= Math.min(totSider, side + 2); s++) {
+        const erAktiv = s === side;
+        const sKopi = s;
+        lagBtn(String(s), erAktiv, () => { side = sKopi; visRader(); });
+      }
+      lagBtn("Neste →", side === totSider, () => { side++; visRader(); });
+    } else {
+      paginering.style.display = "none";
+    }
+
+    // Radklikk → modal
+    tabellBody.querySelectorAll("tr.data-row").forEach(tr => {
+      tr.addEventListener("click", e => {
+        if (e.target.closest(".slett-btn")) return; // ikke åpne modal ved slett-klikk
+        const id = tr.dataset.id;
+        const r  = alleRader.find(x => String(x.id) === id);
+        if (r) visModal(r);
+      });
     });
 
-    liste.innerHTML = Object.entries(grupper).map(([dag, rader], idx) => {
-      const bookingCount = rader.filter(r => r.booking_vist).length;
-      return `
-        <div class="dag-gruppe">
-          <div class="dag-header" onclick="toggleDag(${idx})">
-            <div class="dag-header-left">
-              <span class="dag-dato">${dag}</span>
-              <span class="dag-antall">${rader.length} samtale${rader.length !== 1 ? "r" : ""}</span>
-              ${bookingCount ? `<span class="dag-booking-count">${bookingCount} booking</span>` : ""}
-            </div>
-            <span class="dag-toggle" id="toggle-${idx}">▾</span>
-          </div>
-          <div class="dag-innhold" id="dag-${idx}">
-            <div class="thead-rad">
-              <div>Tid</div>
-              <div class="col-navn">Navn</div>
-              <div>Melding</div>
-              <div class="col-svar">Svar</div>
-              <div>Booking</div>
-              <div></div>
-            </div>
-            ${rader.map(r => {
-              const tid = new Date(r.opprettet).toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
-              return `
-                <div class="samtale-rad">
-                  <div class="col-tid">${tid}</div>
-                  <div class="col-navn">${r.navn || "Ukjent"}</div>
-                  <div class="col-melding">${r.melding}</div>
-                  <div class="col-svar">${r.svar}</div>
-                  <div>${r.booking_vist ? '<span class="booking-badge">Booking</span>' : "–"}</div>
-                  <div><button class="slett-btn" onclick="bekreftSlettModal(${r.id})">Slett</button></div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `;
-    }).join("");
-  }
-
-  function toggleDag(idx) {
-    const innhold = document.getElementById(`dag-${idx}`);
-    const toggle  = document.getElementById(`toggle-${idx}`);
-    const lukket  = innhold.style.display === "none";
-    innhold.style.display = lukket ? "block" : "none";
-    toggle.classList.toggle("lukket", !lukket);
-  }
-
-  function bekreftSlettModal(id) {
-    slettId = id;
-    modal.classList.add("vis");
-  }
-
-  async function bekreftSlett() {
-    if (!slettId) return;
-    modal.classList.remove("vis");
-
-    try {
-      await fetch(`${BACKEND_URL}/slett-samtale`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: slettId, nokkel: aktivNokkel })
+    // Slett-knapper
+    tabellBody.querySelectorAll(".slett-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        slettSamtale(btn.dataset.id);
       });
-
-      alleRader = alleRader.filter(r => r.id !== slettId);
-      oppdaterStats(alleRader);
-      visGruppert(alleRader);
-    } catch (err) {
-      alert("Kunne ikke slette samtalen. Prøv igjen.");
-    }
-    slettId = null;
+    });
   }
 
   sokInput.addEventListener("input", filtrer);
   filterBooking.addEventListener("change", filtrer);
 
-  // ── Grafer ────────────────────────────────────────────────────────────────
-  let chartSamtaler = null;
-  let chartBooking = null;
-  let chartFordeling = null;
-
-  function byggGrafer(data) {
-    // Siste 14 dager
-    const dager = [];
-    const samtalerPerDag = [];
-    const bookingPerDag = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dagStr = d.toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit" });
-      dager.push(dagStr);
-      const dagData = data.filter(r => {
-        const rd = new Date(r.opprettet);
-        return rd.getDate() === d.getDate() && rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear();
-      });
-      samtalerPerDag.push(dagData.length);
-      bookingPerDag.push(dagData.filter(r => r.booking_vist).length);
-    }
-
-    // Graf 1 – Samtaler per dag
-    if (chartSamtaler) chartSamtaler.destroy();
-    chartSamtaler = new Chart(document.getElementById("graf-samtaler"), {
-      type: "line",
-      data: {
-        labels: dager,
-        datasets: [{
-          label: "Samtaler",
-          data: samtalerPerDag,
-          borderColor: "#0d0d0d",
-          backgroundColor: "rgba(13,13,13,0.06)",
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-          pointRadius: 3
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-    });
-
-    // Graf 2 – Booking per dag
-    if (chartBooking) chartBooking.destroy();
-    chartBooking = new Chart(document.getElementById("graf-booking"), {
-      type: "bar",
-      data: {
-        labels: dager,
-        datasets: [{
-          label: "Booking",
-          data: bookingPerDag,
-          backgroundColor: "#b8924a",
-          borderRadius: 6
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-    });
-
-    // Graf 3 – Vanligste ord
-    const stoppOrd = new Set(["jeg", "har", "en", "et", "og", "er", "det", "hva", "kan", "til", "for", "deg", "du", "hei", "ikke", "med", "om", "som", "av", "på", "i", "vil", "at", "de", "den", "vi", "hvor", "når", "noe", "bare"]);
-    const ordTelling = {};
-    data.forEach(r => {
-      r.melding?.toLowerCase().split(/\s+/).forEach(ord => {
-        ord = ord.replace(/[^a-zæøå]/g, "");
-        if (ord.length > 2 && !stoppOrd.has(ord)) {
-          ordTelling[ord] = (ordTelling[ord] || 0) + 1;
-        }
-      });
-    });
-    const toppOrd = Object.entries(ordTelling).sort((a, b) => b[1] - a[1]).slice(0, 12);
-    document.getElementById("ord-sky").innerHTML = toppOrd.length
-      ? toppOrd.map(([ord, n]) => `<div class="ord-badge"><strong>${n}</strong> ${ord}</div>`).join("")
-      : '<span style="color:var(--ink-3);font-size:13px">Ikke nok data ennå</span>';
-
-    // Graf 4 – Fordeling booking vs vanlig
-    const bookingTotal = data.filter(r => r.booking_vist).length;
-    const vanligTotal = data.length - bookingTotal;
-    if (chartFordeling) chartFordeling.destroy();
-    chartFordeling = new Chart(document.getElementById("graf-fordeling"), {
-      type: "doughnut",
-      data: {
-        labels: ["Vanlige spørsmål", "Bookingforespørsler"],
-        datasets: [{
-          data: [vanligTotal, bookingTotal],
-          backgroundColor: ["#e4ddd1", "#b8924a"],
-          borderWidth: 0
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { font: { family: "DM Sans" }, padding: 16 } } } }
-    });
+  // ── Sletting ─────────────────────────────────────────────────────────────────
+  async function slettSamtale(id) {
+    if (!confirm("Slett denne samtalen? Dette kan ikke angres.")) return;
+    const { error } = await sb.from("samtaler").delete().eq("id", id);
+    if (error) { alert("Kunne ikke slette samtalen. Prøv igjen."); return; }
+    alleRader = alleRader.filter(r => String(r.id) !== String(id));
+    oppdaterStats(alleRader);
+    filtrer();
   }
 
-  function filtrer() {
-    const sok = sokInput.value.toLowerCase();
-    const kunBooking = filterBooking.value === "booking";
-    const filtrert = alleRader.filter(r =>
-      (r.melding?.toLowerCase().includes(sok) || r.svar?.toLowerCase().includes(sok) || r.navn?.toLowerCase().includes(sok)) &&
-      (!kunBooking || r.booking_vist)
-    );
-    visGruppert(filtrert);
+  // ── Modal ─────────────────────────────────────────────────────────────────────
+  function visModal(r) {
+    const dato = new Date(r.opprettet).toLocaleString("no-NO", {
+      weekday: "long", day: "numeric", month: "long",
+      year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+    document.getElementById("modal-navn").textContent    = r.navn || "Ukjent kunde";
+    document.getElementById("modal-meta").textContent    = dato + (r.booking_vist ? " · Bookingforespørsel" : "");
+    document.getElementById("modal-melding").textContent = r.melding || "–";
+    document.getElementById("modal-svar").textContent    = r.svar    || "–";
+    modalBg.classList.add("vis");
   }
+
+  document.getElementById("modal-lukk").addEventListener("click", () => modalBg.classList.remove("vis"));
+  modalBg.addEventListener("click", e => { if (e.target === modalBg) modalBg.classList.remove("vis"); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") modalBg.classList.remove("vis"); });
+
+  // ── CSV-eksport ───────────────────────────────────────────────────────────────
+  exportBtn.addEventListener("click", () => {
+    if (!filtrerte.length) return;
+    const header = ["Tidspunkt", "Navn", "Melding", "Svar", "Booking"];
+    const rader  = filtrerte.map(r => [
+      new Date(r.opprettet).toLocaleString("no-NO"),
+      r.navn || "Ukjent",
+      r.melding || "",
+      r.svar    || "",
+      r.booking_vist ? "Ja" : "Nei"
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`));
+
+    const csv  = [header, ...rader].map(r => r.join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `samtaler-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
 </script>
 </body>
-</html>
+</html>   
