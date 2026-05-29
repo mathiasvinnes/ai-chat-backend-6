@@ -75,17 +75,33 @@
     table { width: 100%; border-collapse: collapse; }
     thead { background: var(--paper-2); }
     th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 20px; border-bottom: 1px solid var(--paper-3); }
-    td { padding: 14px 20px; font-size: 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; line-height: 1.5; }
+    td { padding: 13px 20px; font-size: 14px; border-bottom: 1px solid var(--paper-2); vertical-align: middle; line-height: 1.5; }
     tr:last-child td { border-bottom: none; }
     tr.data-row { cursor: pointer; transition: background 0.1s; }
     tr.data-row:hover td { background: var(--paper); }
-    .td-tid { color: var(--ink-3); font-size: 12px; white-space: nowrap; }
-    .td-melding { max-width: 220px; }
-    .td-svar { max-width: 280px; color: var(--ink-2); }
-    .td-tekst { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .booking-badge { display: inline-block; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 600; padding: 3px 10px; }
+
+    /* Datogruppe-header */
+    tr.dato-rad td { background: var(--paper-2); padding: 8px 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--paper-3); cursor: default; }
+    tr.dato-rad:hover td { background: var(--paper-2); }
+
+    /* Avatar */
+    .avatar-celle { width: 48px; padding-right: 0 !important; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--paper-3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--ink-2); flex-shrink: 0; text-transform: uppercase; }
+    .avatar.booking-av { background: var(--gold-light); color: var(--gold-dark); border-color: #f6d998; }
+
+    /* Navn + klokkeslett */
+    .navn-celle { white-space: nowrap; }
+    .navn-tekst { font-weight: 600; font-size: 14px; color: var(--ink); }
+    .kl-tekst { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+    .td-melding { max-width: 240px; }
+    .td-svar { max-width: 300px; color: var(--ink-2); }
+    .td-tekst { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 13.5px; }
+
+    .booking-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 4px 10px; }
     .empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; }
-    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; }
+    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 15px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; opacity: 0; }
+    tr.data-row:hover .slett-btn { opacity: 1; }
     .slett-btn:hover { background: var(--red-light); color: var(--red); }
 
     /* Paginering */
@@ -357,6 +373,12 @@
     visRader();
   }
 
+  function lagAvatar(navn, harBooking) {
+    const bokstav = navn && navn !== "Ukjent" ? navn.charAt(0).toUpperCase() : "?";
+    const cls = harBooking ? "avatar booking-av" : "avatar";
+    return `<div class="${cls}">${esc(bokstav)}</div>`;
+  }
+
   function visRader() {
     if (!filtrerte.length) {
       tabellBody.innerHTML = `<tr><td colspan="6" class="empty">Ingen samtaler funnet.</td></tr>`;
@@ -364,24 +386,49 @@
       return;
     }
 
-    const start  = (side - 1) * perSide;
-    const sideSli = filtrerte.slice(start, start + perSide);
+    const start    = (side - 1) * perSide;
+    const sideSli  = filtrerte.slice(start, start + perSide);
     const totSider = Math.ceil(filtrerte.length / perSide);
 
-    tabellBody.innerHTML = sideSli.map(r => {
-      const dato = new Date(r.opprettet).toLocaleString("no-NO", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-      });
-      return `<tr class="data-row" data-id="${esc(String(r.id))}">
-        <td class="td-tid">${esc(dato)}</td>
-        <td>${esc(r.navn || "Ukjent")}</td>
+    // Grupper rader per dag
+    let html = "";
+    let sisteDag = "";
+
+    sideSli.forEach(r => {
+      const d = new Date(r.opprettet);
+      const dagNokkel = d.toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const dagLabel  = d.toLocaleDateString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const kl = d.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
+      const navn = r.navn && r.navn !== "Ukjent" ? r.navn : "Ukjent";
+
+      // Ny datogruppe-header
+      if (dagNokkel !== sisteDag) {
+        // Er det i dag eller i går?
+        const iDag = new Date(); iDag.setHours(0,0,0,0);
+        const iGar = new Date(iDag); iGar.setDate(iGar.getDate() - 1);
+        const dDag = new Date(d); dDag.setHours(0,0,0,0);
+        let labelTekst = dagLabel.charAt(0).toUpperCase() + dagLabel.slice(1);
+        if (dDag.getTime() === iDag.getTime()) labelTekst = "I dag – " + labelTekst;
+        else if (dDag.getTime() === iGar.getTime()) labelTekst = "I går – " + labelTekst;
+
+        html += `<tr class="dato-rad"><td colspan="6">${esc(labelTekst)}</td></tr>`;
+        sisteDag = dagNokkel;
+      }
+
+      html += `<tr class="data-row" data-id="${esc(String(r.id))}">
+        <td class="avatar-celle">${lagAvatar(navn, r.booking_vist)}</td>
+        <td class="navn-celle">
+          <div class="navn-tekst">${esc(navn)}</div>
+          <div class="kl-tekst">kl. ${esc(kl)}</div>
+        </td>
         <td class="td-melding"><div class="td-tekst">${esc(r.melding)}</div></td>
         <td class="td-svar"><div class="td-tekst">${esc(r.svar)}</div></td>
-        <td>${r.booking_vist ? '<span class="booking-badge">Booking</span>' : "–"}</td>
+        <td>${r.booking_vist ? '<span class="booking-badge">📅 Booking</span>' : "–"}</td>
         <td><button class="slett-btn" title="Slett samtale" data-id="${esc(String(r.id))}">🗑</button></td>
       </tr>`;
-    }).join("");
+    });
+
+    tabellBody.innerHTML = html;
 
     // Paginering
     if (totSider > 1) {
