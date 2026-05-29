@@ -13,6 +13,7 @@
       --paper: #f5f0e8; --paper-2: #ede8df; --paper-3: #e4ddd1;
       --gold: #b8924a; --gold-light: #fef3c7; --gold-dark: #92400e;
       --white: #ffffff; --red: #ef4444; --red-light: #fee2e2;
+      --green: #16a34a; --green-light: #dcfce7;
       --r: 16px; --shadow: 0 4px 24px rgba(13,13,13,0.08);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,7 +42,6 @@
     .logout-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 14px; cursor: pointer; transition: background 0.15s; }
     .logout-btn:hover { background: rgba(255,255,255,0.14); }
 
-    /* MAIN */
     .main { max-width: 1160px; margin: 0 auto; padding: 40px 24px; }
     .page-title { font-family: 'DM Serif Display', serif; font-size: 32px; margin-bottom: 4px; }
     .page-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 32px; }
@@ -76,57 +76,80 @@
     .export-btn { background: var(--ink); color: var(--white); border: none; border-radius: 10px; padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
     .export-btn:hover { opacity: 0.8; }
 
-    /* DATO-GRUPPE */
-    .dag-gruppe { margin-bottom: 8px; }
-    .dag-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; margin-bottom: 4px; cursor: pointer; user-select: none; transition: background 0.15s; }
+    /* DAG-GRUPPE */
+    .dag-gruppe { margin-bottom: 12px; }
+    .dag-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; margin-bottom: 6px; cursor: pointer; user-select: none; transition: background 0.15s; }
     .dag-header:hover { background: var(--paper-3); }
-    .dag-header-left { display: flex; align-items: center; gap: 12px; }
+    .dag-header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .dag-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
     .dag-badge { font-size: 11px; font-weight: 600; background: var(--white); border: 1px solid var(--paper-3); border-radius: 999px; padding: 2px 10px; color: var(--ink-3); }
     .dag-badge.har-booking { background: var(--gold-light); border-color: #f6d998; color: var(--gold-dark); }
-    .dag-chevron { font-size: 12px; color: var(--ink-3); transition: transform 0.2s; }
+    .dag-chevron { font-size: 11px; color: var(--ink-3); transition: transform 0.2s; }
     .dag-chevron.lukket { transform: rotate(-90deg); }
-    .dag-rader { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
-    .dag-vis-mer { text-align: center; padding: 8px; font-size: 12px; color: var(--gold); font-weight: 600; cursor: pointer; border: 1px dashed var(--paper-3); border-radius: 8px; margin-top: 4px; transition: background 0.15s; }
+    .dag-rader { display: flex; flex-direction: column; gap: 4px; }
+    .dag-vis-mer { text-align: center; padding: 9px; font-size: 12px; color: var(--gold); font-weight: 600; cursor: pointer; border: 1px dashed var(--paper-3); border-radius: 8px; margin-top: 4px; transition: background 0.15s; }
     .dag-vis-mer:hover { background: var(--gold-light); }
 
-    /* RAD */
-    .samtale-rad { display: flex; align-items: center; gap: 14px; background: var(--white); border: 1px solid var(--paper-2); border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
-    .samtale-rad:hover { border-color: var(--paper-3); box-shadow: var(--shadow); }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--paper-3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--ink-2); flex-shrink: 0; text-transform: uppercase; }
+    /* SAMTALE-KORT */
+    .samtale-kort { background: var(--white); border: 1px solid var(--paper-2); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    .samtale-kort:hover { border-color: var(--paper-3); box-shadow: var(--shadow); }
+    .kort-topp { display: flex; align-items: flex-start; gap: 12px; }
+    .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--paper-3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--ink-2); flex-shrink: 0; text-transform: uppercase; }
     .avatar.booking-av { background: var(--gold-light); color: var(--gold-dark); border-color: #f6d998; }
-    .rad-info { flex: 1; min-width: 0; }
-    .rad-top { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
-    .rad-navn { font-weight: 600; font-size: 14px; }
-    .rad-kl { font-size: 12px; color: var(--ink-3); }
-    .booking-badge { display: inline-flex; align-items: center; gap: 3px; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 2px 8px; }
-    .rad-melding { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px; }
-    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 15px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; opacity: 0; flex-shrink: 0; }
-    .samtale-rad:hover .slett-btn { opacity: 1; }
+    .kort-meta { flex: 1; min-width: 0; }
+    .kort-meta-topp { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
+    .kort-navn { font-weight: 600; font-size: 14px; }
+    .kort-kl { font-size: 12px; color: var(--ink-3); }
+    .booking-badge { display: inline-flex; align-items: center; gap: 3px; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 2px 9px; }
+    .kort-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 15px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; opacity: 0; }
+    .samtale-kort:hover .slett-btn { opacity: 1; }
     .slett-btn:hover { background: var(--red-light); color: var(--red); }
-    .empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; }
+
+    /* CHAT-BOBLER I KORTET */
+    .kort-chat { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .boble-rad { display: flex; gap: 8px; align-items: flex-start; }
+    .boble-rad.kunde { justify-content: flex-end; }
+    .boble-rad.bot { justify-content: flex-start; }
+    .boble-ikon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 2px; }
+    .boble-ikon.kunde-ikon { background: var(--ink); color: var(--white); font-weight: 700; }
+    .boble-ikon.bot-ikon { background: var(--paper-2); font-size: 12px; }
+    .boble { border-radius: 14px; padding: 8px 12px; font-size: 13px; line-height: 1.45; max-width: 80%; word-break: break-word; }
+    .boble.kunde-boble { background: var(--ink); color: var(--white); border-bottom-right-radius: 4px; }
+    .boble.bot-boble { background: var(--paper-2); color: var(--ink); border-bottom-left-radius: 4px; }
+    .kort-vis-mer-chat { font-size: 12px; color: var(--gold); font-weight: 600; cursor: pointer; padding: 4px 0 2px 30px; }
+    .kort-vis-mer-chat:hover { text-decoration: underline; }
 
     /* MODAL */
     .modal-bg { position: fixed; inset: 0; background: rgba(13,13,13,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
     .modal-bg.vis { opacity: 1; pointer-events: all; }
-    .modal { background: var(--white); border-radius: 20px; padding: 32px; width: min(100%, 560px); max-height: 80vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(13,13,13,0.25); transform: translateY(12px); transition: transform 0.2s; }
+    .modal { background: var(--white); border-radius: 20px; padding: 32px; width: min(100%, 560px); max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(13,13,13,0.25); transform: translateY(12px); transition: transform 0.2s; }
     .modal-bg.vis .modal { transform: translateY(0); }
     .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
     .modal-tittel { font-family: 'DM Serif Display', serif; font-size: 22px; }
     .modal-lukk { background: var(--paper-2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
     .modal-lukk:hover { background: var(--paper-3); }
-    .modal-meta { font-size: 12px; color: var(--ink-3); margin-bottom: 20px; }
-    .modal-seksjon { margin-bottom: 16px; }
-    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
-    .modal-tekst { font-size: 14px; line-height: 1.6; background: var(--paper); border-radius: 10px; padding: 14px 16px; }
+    .modal-meta { font-size: 12px; color: var(--ink-3); margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .modal-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .modal-tag.booking { background: var(--gold-light); color: var(--gold-dark); }
+    .modal-tag.tid { background: var(--paper-2); color: var(--ink-3); }
+    .modal-chat { display: flex; flex-direction: column; gap: 10px; }
+    .modal-boble-rad { display: flex; gap: 10px; align-items: flex-start; }
+    .modal-boble-rad.kunde { flex-direction: row-reverse; }
+    .modal-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .modal-avatar.kunde-av { background: var(--ink); color: var(--white); }
+    .modal-avatar.bot-av { background: var(--paper-2); color: var(--ink-3); font-size: 14px; }
+    .modal-boble { border-radius: 16px; padding: 10px 14px; font-size: 14px; line-height: 1.55; max-width: 85%; }
+    .modal-boble.kunde { background: var(--ink); color: var(--white); border-bottom-right-radius: 4px; }
+    .modal-boble.bot { background: var(--paper-2); color: var(--ink); border-bottom-left-radius: 4px; }
+    .modal-boble-navn { font-size: 10px; color: var(--ink-3); margin-bottom: 4px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    .empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; }
 
     @media (max-width: 800px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .topbar { padding: 14px 16px; }
       .main { padding: 24px 16px; }
-    }
-    @media (max-width: 500px) {
-      .stats-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -153,11 +176,11 @@
       <button class="logout-btn" id="logout-btn">Logg ut</button>
     </div>
   </div>
+
   <div class="main">
     <div class="page-title">Samtalelogg</div>
     <div class="page-sub" id="page-sub">Oversikt over alle kundesamtaler</div>
 
-    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Totalt samtaler</div><div class="stat-value" id="stat-totalt">–</div></div>
       <div class="stat-card"><div class="stat-label">Bookingforespørsler</div><div class="stat-value gold" id="stat-booking">–</div></div>
@@ -165,7 +188,6 @@
       <div class="stat-card"><div class="stat-label">Konverteringsrate</div><div class="stat-value gold" id="stat-rate">–</div></div>
     </div>
 
-    <!-- Diagram -->
     <div class="chart-card">
       <div class="chart-tittel">Aktivitet siste 14 dager</div>
       <div class="chart-wrap" id="chart-wrap"></div>
@@ -175,7 +197,6 @@
       </div>
     </div>
 
-    <!-- Toolbar -->
     <div class="toolbar">
       <input class="filter-input" id="sok" placeholder="Søk i meldinger, navn..." type="text" />
       <select class="filter-select" id="filter-booking">
@@ -185,12 +206,11 @@
       <button class="export-btn" id="export-btn">↓ Eksporter CSV</button>
     </div>
 
-    <!-- Samtaler gruppert per dag -->
     <div id="samtale-liste"><div class="empty">Laster samtaler...</div></div>
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Modal – full samtale -->
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div class="modal-header">
@@ -198,14 +218,7 @@
       <button class="modal-lukk" id="modal-lukk">✕</button>
     </div>
     <div class="modal-meta" id="modal-meta"></div>
-    <div class="modal-seksjon">
-      <div class="modal-label">Kundens melding</div>
-      <div class="modal-tekst" id="modal-melding"></div>
-    </div>
-    <div class="modal-seksjon">
-      <div class="modal-label">AI-svar</div>
-      <div class="modal-tekst" id="modal-svar"></div>
-    </div>
+    <div class="modal-chat" id="modal-chat"></div>
   </div>
 </div>
 
@@ -223,7 +236,6 @@
   const loginScreen   = document.getElementById("login-screen");
   const dashScreen    = document.getElementById("dashboard-screen");
   const loginBtn      = document.getElementById("login-btn");
-  const logoutBtn     = document.getElementById("logout-btn");
   const loginFeil     = document.getElementById("login-feil");
   const epostInput    = document.getElementById("epost");
   const passordInput  = document.getElementById("passord");
@@ -235,11 +247,10 @@
 
   let alleRader = [];
   let filtrerte = [];
-  // Antall synlige rader per dag (kan utvides)
   const dagTilstand = {};
   const PER_DAG_START = 5;
 
-  // AUTH
+  // ── AUTH ─────────────────────────────────────────────────────────────────────
   sb.auth.onAuthStateChange(async (event, session) => {
     if (session) await visDashboard(session.user);
     else { loginScreen.style.display = "flex"; dashScreen.style.display = "none"; }
@@ -252,23 +263,23 @@
     const { error } = await sb.auth.signInWithPassword({ email: epost, password: passord });
     if (error) { loginFeil.textContent = "Feil e-post eller passord."; loginBtn.disabled = false; loginBtn.textContent = "Logg inn"; }
   });
-  logoutBtn.addEventListener("click", () => sb.auth.signOut());
+  document.getElementById("logout-btn").addEventListener("click", () => sb.auth.signOut());
   passordInput.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
 
-  // DASHBOARD
+  // ── LAST DATA ────────────────────────────────────────────────────────────────
   async function visDashboard(user) {
     loginScreen.style.display = "none";
     dashScreen.style.display = "block";
     try {
-      const restRes = await fetch(
+      const res = await fetch(
         SUPABASE_URL + "/rest/v1/samtaler?select=*&order=opprettet.desc&limit=500",
         { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY } }
       );
-      if (!restRes.ok) {
-        samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Feil ${restRes.status}: Kunne ikke laste samtaler.</div>`;
+      if (!res.ok) {
+        samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Feil ${res.status}: Kunne ikke laste samtaler.</div>`;
         return;
       }
-      const data = await restRes.json();
+      const data = await res.json();
       const bedrift = data.length > 0 ? data[0].bedrift : user.email;
       document.getElementById("topbar-bedrift").textContent = bedrift;
       document.getElementById("page-sub").textContent = `Samtaler for ${bedrift}`;
@@ -277,20 +288,21 @@
       tegnDiagram(data);
       filtrer();
     } catch (err) {
-      samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Uventet feil: ${esc(err.message)}</div>`;
+      samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Feil: ${esc(err.message)}</div>`;
     }
   }
 
+  // ── STATS ────────────────────────────────────────────────────────────────────
   function oppdaterStats(data) {
-    const bookinger = data.filter(r => r.booking_vist).length;
-    const enUkeSiden = new Date(); enUkeSiden.setDate(enUkeSiden.getDate() - 7);
+    const bookinger   = data.filter(r => r.booking_vist).length;
+    const enUkeSiden  = new Date(); enUkeSiden.setDate(enUkeSiden.getDate() - 7);
     document.getElementById("stat-totalt").textContent  = data.length;
     document.getElementById("stat-booking").textContent = bookinger;
     document.getElementById("stat-uke").textContent     = data.filter(r => new Date(r.opprettet) > enUkeSiden).length;
     document.getElementById("stat-rate").textContent    = data.length ? Math.round(bookinger / data.length * 100) + "%" : "0%";
   }
 
-  // DIAGRAM – søylediagram siste 14 dager
+  // ── DIAGRAM ──────────────────────────────────────────────────────────────────
   function tegnDiagram(data) {
     const dager = 14;
     const dagData = [];
@@ -305,11 +317,10 @@
       });
     }
     const maks = Math.max(...dagData.map(d => d.totalt), 1);
-    const wrap = document.getElementById("chart-wrap");
-    wrap.innerHTML = dagData.map(d => {
-      const totH    = Math.round((d.totalt  / maks) * 100);
-      const bookH   = Math.round((d.booking / maks) * 100);
-      const restH   = totH - bookH;
+    document.getElementById("chart-wrap").innerHTML = dagData.map(d => {
+      const totH  = Math.round((d.totalt  / maks) * 100);
+      const bookH = Math.round((d.booking / maks) * 100);
+      const restH = totH - bookH;
       return `<div class="chart-col">
         <div class="bar-tall">${d.totalt > 0 ? d.totalt : ""}</div>
         <div class="bar-stack">
@@ -322,7 +333,7 @@
     }).join("");
   }
 
-  // FILTRERING
+  // ── FILTRERING ───────────────────────────────────────────────────────────────
   function filtrer() {
     const sok = sokInput.value.toLowerCase();
     const kunBooking = filterBooking.value === "booking";
@@ -335,17 +346,26 @@
   sokInput.addEventListener("input", filtrer);
   filterBooking.addEventListener("change", filtrer);
 
-  // VIS LISTE GRUPPERT PER DAG
+  // ── LISTE ────────────────────────────────────────────────────────────────────
+  function lagDagLabel(d) {
+    const iDag = new Date(); iDag.setHours(0,0,0,0);
+    const iGar = new Date(iDag); iGar.setDate(iGar.getDate() - 1);
+    const dDag = new Date(d); dDag.setHours(0,0,0,0);
+    const label = d.toLocaleDateString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const stor  = label.charAt(0).toUpperCase() + label.slice(1);
+    if (dDag.getTime() === iDag.getTime()) return "I dag – " + stor;
+    if (dDag.getTime() === iGar.getTime()) return "I går – " + stor;
+    return stor;
+  }
+
   function visListe() {
     if (!filtrerte.length) {
       samtaleListe.innerHTML = `<div class="empty">Ingen samtaler funnet.</div>`;
       return;
     }
-
-    // Grupper per dag
     const grupper = {};
     filtrerte.forEach(r => {
-      const d = new Date(r.opprettet);
+      const d      = new Date(r.opprettet);
       const nokkel = d.toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
       if (!grupper[nokkel]) grupper[nokkel] = { label: lagDagLabel(d), rader: [], harBooking: false };
       grupper[nokkel].rader.push(r);
@@ -361,23 +381,22 @@
       const div = document.createElement("div");
       div.className = "dag-gruppe";
 
-      const bookingTekst = gruppe.harBooking
-        ? `<span class="dag-badge har-booking">📅 ${gruppe.rader.filter(r => r.booking_vist).length} booking</span>`
-        : "";
+      const bookAntall = gruppe.rader.filter(r => r.booking_vist).length;
+      const bookBadge  = bookAntall > 0
+        ? `<span class="dag-badge har-booking">📅 ${bookAntall} booking</span>` : "";
 
       div.innerHTML = `
         <div class="dag-header" data-nokkel="${esc(nokkel)}">
           <div class="dag-header-left">
             <span class="dag-label">${esc(gruppe.label)}</span>
             <span class="dag-badge">${gruppe.rader.length} samtaler</span>
-            ${bookingTekst}
+            ${bookBadge}
           </div>
           <span class="dag-chevron ${tilstand.apen ? "" : "lukket"}">▼</span>
         </div>
         <div class="dag-rader" style="${tilstand.apen ? "" : "display:none"}"></div>
       `;
 
-      // Toggle dag åpen/lukket
       div.querySelector(".dag-header").addEventListener("click", () => {
         const raderEl = div.querySelector(".dag-rader");
         const chevron = div.querySelector(".dag-chevron");
@@ -386,76 +405,139 @@
         chevron.classList.toggle("lukket", !tilstand.apen);
       });
 
-      const raderEl = div.querySelector(".dag-rader");
-      fyllRader(raderEl, gruppe.rader, tilstand, nokkel, gruppe);
-
+      fyllRader(div.querySelector(".dag-rader"), gruppe.rader, tilstand);
       samtaleListe.appendChild(div);
     });
   }
 
-  function fyllRader(container, rader, tilstand, nokkel, gruppe) {
+  function fyllRader(container, rader, tilstand) {
     container.innerHTML = "";
-    const synlige = rader.slice(0, tilstand.vis);
-
-    synlige.forEach(r => {
+    rader.slice(0, tilstand.vis).forEach(r => {
       const d    = new Date(r.opprettet);
       const kl   = d.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
-      const navn = r.navn && r.navn !== "Ukjent" ? r.navn : "Ukjent";
-      const bokstav = navn !== "Ukjent" ? navn.charAt(0).toUpperCase() : "?";
+      const navn = (r.navn && r.navn !== "Ukjent") ? r.navn : "Ukjent";
+      const bok  = navn !== "Ukjent" ? navn.charAt(0).toUpperCase() : "?";
 
-      const rad = document.createElement("div");
-      rad.className = "samtale-rad";
-      rad.innerHTML = `
-        <div class="avatar ${r.booking_vist ? "booking-av" : ""}">${esc(bokstav)}</div>
-        <div class="rad-info">
-          <div class="rad-top">
-            <span class="rad-navn">${esc(navn)}</span>
-            <span class="rad-kl">kl. ${esc(kl)}</span>
-            ${r.booking_vist ? '<span class="booking-badge">📅 Booking</span>' : ""}
+      const kort = document.createElement("div");
+      kort.className = "samtale-kort";
+
+      // Bygg chat-boblerHTML (kun første utveksling synlig, resten bak "vis mer")
+      const chatHtml = lagChatHtml(r, navn, false);
+
+      kort.innerHTML = `
+        <div class="kort-topp">
+          <div class="avatar ${r.booking_vist ? "booking-av" : ""}">${esc(bok)}</div>
+          <div class="kort-meta">
+            <div class="kort-meta-topp">
+              <span class="kort-navn">${esc(navn)}</span>
+              <span class="kort-kl">kl. ${esc(kl)}</span>
+              ${r.booking_vist ? '<span class="booking-badge">📅 Booking</span>' : ""}
+            </div>
           </div>
-          <div class="rad-melding">${esc(r.melding || "–")}</div>
+          <div class="kort-actions">
+            <button class="slett-btn" title="Slett">🗑</button>
+          </div>
         </div>
-        <button class="slett-btn" title="Slett" data-id="${esc(String(r.id))}">🗑</button>
+        <div class="kort-chat">${chatHtml}</div>
       `;
 
-      rad.addEventListener("click", e => {
+      kort.addEventListener("click", e => {
         if (e.target.closest(".slett-btn")) return;
-        visModal(r);
+        if (e.target.closest(".kort-vis-mer-chat")) return;
+        visModal(r, navn);
       });
-      rad.querySelector(".slett-btn").addEventListener("click", e => {
+
+      // Vis mer chat
+      const visMerBtn = kort.querySelector(".kort-vis-mer-chat");
+      if (visMerBtn) {
+        visMerBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          kort.querySelector(".kort-chat").innerHTML = lagChatHtml(r, navn, true);
+          const nyVisMer = kort.querySelector(".kort-vis-mer-chat");
+          if (nyVisMer) nyVisMer.addEventListener("click", ev => { ev.stopPropagation(); });
+        });
+      }
+
+      kort.querySelector(".slett-btn").addEventListener("click", e => {
         e.stopPropagation();
         slettSamtale(r.id);
       });
 
-      container.appendChild(rad);
+      container.appendChild(kort);
     });
 
-    // "Vis mer"-knapp hvis det er flere
     if (rader.length > tilstand.vis) {
-      const igjen = rader.length - tilstand.vis;
+      const igjen  = rader.length - tilstand.vis;
       const visMer = document.createElement("div");
       visMer.className = "dag-vis-mer";
       visMer.textContent = `Vis ${Math.min(igjen, 10)} til (${igjen} gjenstår)`;
-      visMer.addEventListener("click", () => {
-        tilstand.vis += 10;
-        fyllRader(container, rader, tilstand, nokkel, gruppe);
-      });
+      visMer.addEventListener("click", () => { tilstand.vis += 10; fyllRader(container, rader, tilstand); });
       container.appendChild(visMer);
     }
   }
 
-  function lagDagLabel(d) {
-    const iDag = new Date(); iDag.setHours(0,0,0,0);
-    const iGar = new Date(iDag); iGar.setDate(iGar.getDate() - 1);
-    const dDag = new Date(d); dDag.setHours(0,0,0,0);
-    const label = d.toLocaleDateString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    const stor = label.charAt(0).toUpperCase() + label.slice(1);
-    if (dDag.getTime() === iDag.getTime()) return "I dag – " + stor;
-    if (dDag.getTime() === iGar.getTime()) return "I går – " + stor;
-    return stor;
+  // Bygg chat-bobler: kundemelding + AI-svar
+  function lagChatHtml(r, navn, visAlt) {
+    const bok = (navn && navn !== "Ukjent") ? navn.charAt(0).toUpperCase() : "?";
+
+    // Kutt lange tekster i kompakt-visning
+    const MAX = 120;
+    const meldingKort = r.melding && r.melding.length > MAX && !visAlt
+      ? r.melding.slice(0, MAX) + "…" : (r.melding || "–");
+    const svarKort = r.svar && r.svar.length > MAX && !visAlt
+      ? r.svar.slice(0, MAX) + "…" : (r.svar || "–");
+
+    const harMer = !visAlt && ((r.melding && r.melding.length > MAX) || (r.svar && r.svar.length > MAX));
+
+    return `
+      <div class="boble-rad kunde">
+        <div class="boble kunde-boble">${esc(meldingKort)}</div>
+        <div class="boble-ikon kunde-ikon">${esc(bok)}</div>
+      </div>
+      <div class="boble-rad bot">
+        <div class="boble-ikon bot-ikon">🤖</div>
+        <div class="boble bot-boble">${esc(svarKort)}</div>
+      </div>
+      ${harMer ? `<div class="kort-vis-mer-chat">Vis full samtale ↓</div>` : ""}
+    `;
   }
 
-  // SLETT
+  // ── MODAL ────────────────────────────────────────────────────────────────────
+  function visModal(r, navn) {
+    const dato = new Date(r.opprettet).toLocaleString("no-NO", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+    const bok = (navn && navn !== "Ukjent") ? navn.charAt(0).toUpperCase() : "?";
+
+    document.getElementById("modal-navn").textContent = navn || "Ukjent kunde";
+    document.getElementById("modal-meta").innerHTML   = `
+      <span class="modal-tag tid">🕐 ${esc(dato)}</span>
+      ${r.booking_vist ? '<span class="modal-tag booking">📅 Bookingforespørsel</span>' : ""}
+    `;
+    document.getElementById("modal-chat").innerHTML = `
+      <div class="modal-boble-rad kunde">
+        <div class="modal-boble kunde">
+          <div class="modal-boble-navn">${esc(navn)}</div>
+          ${esc(r.melding || "–")}
+        </div>
+        <div class="modal-avatar kunde-av">${esc(bok)}</div>
+      </div>
+      <div class="modal-boble-rad">
+        <div class="modal-avatar bot-av">🤖</div>
+        <div class="modal-boble bot">
+          <div class="modal-boble-navn">AI-assistent</div>
+          ${esc(r.svar || "–")}
+        </div>
+      </div>
+    `;
+    modalBg.classList.add("vis");
+  }
+
+  document.getElementById("modal-lukk").addEventListener("click", () => modalBg.classList.remove("vis"));
+  modalBg.addEventListener("click", e => { if (e.target === modalBg) modalBg.classList.remove("vis"); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") modalBg.classList.remove("vis"); });
+
+  // ── SLETT ────────────────────────────────────────────────────────────────────
   async function slettSamtale(id) {
     if (!confirm("Slett denne samtalen? Dette kan ikke angres.")) return;
     const { error } = await sb.from("samtaler").delete().eq("id", id);
@@ -466,20 +548,7 @@
     filtrer();
   }
 
-  // MODAL
-  function visModal(r) {
-    const dato = new Date(r.opprettet).toLocaleString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    document.getElementById("modal-navn").textContent    = r.navn || "Ukjent kunde";
-    document.getElementById("modal-meta").textContent    = dato + (r.booking_vist ? " · Bookingforespørsel" : "");
-    document.getElementById("modal-melding").textContent = r.melding || "–";
-    document.getElementById("modal-svar").textContent    = r.svar || "–";
-    modalBg.classList.add("vis");
-  }
-  document.getElementById("modal-lukk").addEventListener("click", () => modalBg.classList.remove("vis"));
-  modalBg.addEventListener("click", e => { if (e.target === modalBg) modalBg.classList.remove("vis"); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") modalBg.classList.remove("vis"); });
-
-  // CSV EKSPORT
+  // ── CSV EKSPORT ───────────────────────────────────────────────────────────────
   exportBtn.addEventListener("click", () => {
     if (!filtrerte.length) return;
     const header = ["Tidspunkt", "Navn", "Melding", "Svar", "Booking"];
