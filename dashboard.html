@@ -447,16 +447,18 @@
         visModal(r, navn);
       });
 
-      // Vis mer chat
-      const visMerBtn = kort.querySelector(".kort-vis-mer-chat");
-      if (visMerBtn) {
-        visMerBtn.addEventListener("click", e => {
+      // Vis mer / vis mindre chat
+      function oppdaterChatListeners() {
+        const btn = kort.querySelector(".kort-vis-mer-chat");
+        if (!btn) return;
+        btn.addEventListener("click", e => {
           e.stopPropagation();
-          kort.querySelector(".kort-chat").innerHTML = lagChatHtml(r, navn, true);
-          const nyVisMer = kort.querySelector(".kort-vis-mer-chat");
-          if (nyVisMer) nyVisMer.addEventListener("click", ev => { ev.stopPropagation(); });
+          const visAlt = btn.dataset.retning === "mer";
+          kort.querySelector(".kort-chat").innerHTML = lagChatHtml(r, navn, visAlt);
+          oppdaterChatListeners();
         });
       }
+      oppdaterChatListeners();
 
       kort.querySelector(".slett-btn").addEventListener("click", e => {
         e.stopPropagation();
@@ -480,14 +482,14 @@
   function lagChatHtml(r, navn, visAlt) {
     const bok = (navn && navn !== "Ukjent") ? navn.charAt(0).toUpperCase() : "?";
 
-    // Kutt lange tekster i kompakt-visning
     const MAX = 120;
     const meldingKort = r.melding && r.melding.length > MAX && !visAlt
       ? r.melding.slice(0, MAX) + "…" : (r.melding || "–");
     const svarKort = r.svar && r.svar.length > MAX && !visAlt
       ? r.svar.slice(0, MAX) + "…" : (r.svar || "–");
 
-    const harMer = !visAlt && ((r.melding && r.melding.length > MAX) || (r.svar && r.svar.length > MAX));
+    const harMer  = !visAlt && ((r.melding && r.melding.length > MAX) || (r.svar && r.svar.length > MAX));
+    const harMind = visAlt  && ((r.melding && r.melding.length > MAX) || (r.svar && r.svar.length > MAX));
 
     return `
       <div class="boble-rad kunde">
@@ -498,7 +500,8 @@
         <div class="boble-ikon bot-ikon">🤖</div>
         <div class="boble bot-boble">${esc(svarKort)}</div>
       </div>
-      ${harMer ? `<div class="kort-vis-mer-chat">Vis full samtale ↓</div>` : ""}
+      ${harMer  ? `<div class="kort-vis-mer-chat" data-retning="mer">Vis full samtale ↓</div>`  : ""}
+      ${harMind ? `<div class="kort-vis-mer-chat" data-retning="mind">Vis mindre ↑</div>` : ""}
     `;
   }
 
