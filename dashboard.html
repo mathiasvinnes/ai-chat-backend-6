@@ -9,26 +9,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
-      --ink: #0d0d0d;
-      --ink-2: #3a3a3a;
-      --ink-3: #7a7a7a;
-      --paper: #f5f0e8;
-      --paper-2: #ede8df;
-      --paper-3: #e4ddd1;
-      --gold: #b8924a;
-      --gold-light: #fef3c7;
-      --gold-dark: #92400e;
-      --white: #ffffff;
-      --red: #ef4444;
-      --red-light: #fee2e2;
-      --r: 16px;
-      --shadow: 0 8px 32px rgba(13,13,13,0.10);
+      --ink: #0d0d0d; --ink-2: #3a3a3a; --ink-3: #7a7a7a;
+      --paper: #f5f0e8; --paper-2: #ede8df; --paper-3: #e4ddd1;
+      --gold: #b8924a; --gold-light: #fef3c7; --gold-dark: #92400e;
+      --white: #ffffff; --red: #ef4444; --red-light: #fee2e2;
+      --r: 16px; --shadow: 0 4px 24px rgba(13,13,13,0.08);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
     body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
 
-    /* ── Login ── */
+    /* LOGIN */
     #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
     .login-box { background: var(--ink); border-radius: 24px; padding: 48px 40px; width: min(100%, 420px); box-shadow: 0 24px 64px rgba(13,13,13,0.2); }
     .login-logo { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--white); margin-bottom: 6px; }
@@ -42,7 +32,7 @@
     .login-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .login-error { margin-top: 14px; font-size: 13px; color: #f87171; text-align: center; }
 
-    /* ── Dashboard ── */
+    /* TOPBAR */
     #dashboard-screen { display: none; }
     .topbar { background: var(--ink); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
     .topbar-logo { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--white); }
@@ -51,86 +41,92 @@
     .logout-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 14px; cursor: pointer; transition: background 0.15s; }
     .logout-btn:hover { background: rgba(255,255,255,0.14); }
 
-    .main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
-    .page-title { font-family: 'DM Serif Display', serif; font-size: 32px; margin-bottom: 6px; }
+    /* MAIN */
+    .main { max-width: 1160px; margin: 0 auto; padding: 40px 24px; }
+    .page-title { font-family: 'DM Serif Display', serif; font-size: 32px; margin-bottom: 4px; }
     .page-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 32px; }
 
-    /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
-    .stat-card { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); padding: 24px; box-shadow: var(--shadow); }
-    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
-    .stat-value { font-family: 'DM Serif Display', serif; font-size: 40px; line-height: 1; color: var(--ink); }
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); padding: 20px 24px; box-shadow: var(--shadow); }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+    .stat-value { font-family: 'DM Serif Display', serif; font-size: 38px; line-height: 1; color: var(--ink); }
     .stat-value.gold { color: var(--gold); }
 
-    /* Toolbar */
-    .toolbar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+    /* CHART */
+    .chart-card { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); padding: 24px; box-shadow: var(--shadow); margin-bottom: 28px; }
+    .chart-tittel { font-size: 13px; font-weight: 600; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px; }
+    .chart-wrap { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+    .chart-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+    .bar-stack { width: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; flex: 1; }
+    .bar { width: 100%; border-radius: 4px 4px 0 0; transition: opacity 0.15s; min-height: 2px; }
+    .bar.samtaler { background: var(--paper-3); }
+    .bar.booking { background: var(--gold); }
+    .bar-dag { font-size: 10px; color: var(--ink-3); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+    .bar-tall { font-size: 10px; color: var(--ink-3); font-weight: 600; }
+    .chart-legend { display: flex; gap: 16px; margin-top: 16px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+
+    /* TOOLBAR */
+    .toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
     .filter-input { background: var(--white); border: 1px solid var(--paper-3); border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); flex: 1; min-width: 200px; }
     .filter-input:focus { outline: none; border-color: var(--gold); }
     .filter-select { background: var(--white); border: 1px solid var(--paper-3); border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; }
-    .export-btn { background: var(--ink); color: var(--white); border: none; border-radius: 10px; padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+    .export-btn { background: var(--ink); color: var(--white); border: none; border-radius: 10px; padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
     .export-btn:hover { opacity: 0.8; }
 
-    /* Table */
-    .table-wrap { background: var(--white); border: 1px solid var(--paper-3); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
-    table { width: 100%; border-collapse: collapse; }
-    thead { background: var(--paper-2); }
-    th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 14px 20px; border-bottom: 1px solid var(--paper-3); }
-    td { padding: 13px 20px; font-size: 14px; border-bottom: 1px solid var(--paper-2); vertical-align: middle; line-height: 1.5; }
-    tr:last-child td { border-bottom: none; }
-    tr.data-row { cursor: pointer; transition: background 0.1s; }
-    tr.data-row:hover td { background: var(--paper); }
+    /* DATO-GRUPPE */
+    .dag-gruppe { margin-bottom: 8px; }
+    .dag-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; margin-bottom: 4px; cursor: pointer; user-select: none; transition: background 0.15s; }
+    .dag-header:hover { background: var(--paper-3); }
+    .dag-header-left { display: flex; align-items: center; gap: 12px; }
+    .dag-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+    .dag-badge { font-size: 11px; font-weight: 600; background: var(--white); border: 1px solid var(--paper-3); border-radius: 999px; padding: 2px 10px; color: var(--ink-3); }
+    .dag-badge.har-booking { background: var(--gold-light); border-color: #f6d998; color: var(--gold-dark); }
+    .dag-chevron { font-size: 12px; color: var(--ink-3); transition: transform 0.2s; }
+    .dag-chevron.lukket { transform: rotate(-90deg); }
+    .dag-rader { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+    .dag-vis-mer { text-align: center; padding: 8px; font-size: 12px; color: var(--gold); font-weight: 600; cursor: pointer; border: 1px dashed var(--paper-3); border-radius: 8px; margin-top: 4px; transition: background 0.15s; }
+    .dag-vis-mer:hover { background: var(--gold-light); }
 
-    /* Datogruppe-header */
-    tr.dato-rad td { background: var(--paper-2); padding: 8px 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--paper-3); cursor: default; }
-    tr.dato-rad:hover td { background: var(--paper-2); }
-
-    /* Avatar */
-    .avatar-celle { width: 48px; padding-right: 0 !important; }
+    /* RAD */
+    .samtale-rad { display: flex; align-items: center; gap: 14px; background: var(--white); border: 1px solid var(--paper-2); border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    .samtale-rad:hover { border-color: var(--paper-3); box-shadow: var(--shadow); }
     .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--paper-2); border: 1.5px solid var(--paper-3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--ink-2); flex-shrink: 0; text-transform: uppercase; }
     .avatar.booking-av { background: var(--gold-light); color: var(--gold-dark); border-color: #f6d998; }
-
-    /* Navn + klokkeslett */
-    .navn-celle { white-space: nowrap; }
-    .navn-tekst { font-weight: 600; font-size: 14px; color: var(--ink); }
-    .kl-tekst { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
-
-    .td-melding { max-width: 240px; }
-    .td-svar { max-width: 300px; color: var(--ink-2); }
-    .td-tekst { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 13.5px; }
-
-    .booking-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 4px 10px; }
-    .empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; }
-    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 15px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; opacity: 0; }
-    tr.data-row:hover .slett-btn { opacity: 1; }
+    .rad-info { flex: 1; min-width: 0; }
+    .rad-top { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+    .rad-navn { font-weight: 600; font-size: 14px; }
+    .rad-kl { font-size: 12px; color: var(--ink-3); }
+    .booking-badge { display: inline-flex; align-items: center; gap: 3px; background: var(--gold-light); color: var(--gold-dark); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 2px 8px; }
+    .rad-melding { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px; }
+    .slett-btn { background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 15px; padding: 4px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s; opacity: 0; flex-shrink: 0; }
+    .samtale-rad:hover .slett-btn { opacity: 1; }
     .slett-btn:hover { background: var(--red-light); color: var(--red); }
+    .empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 15px; }
 
-    /* Paginering */
-    .paginering { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-top: 1px solid var(--paper-2); font-size: 13px; color: var(--ink-3); flex-wrap: wrap; gap: 12px; }
-    .pag-knapper { display: flex; gap: 8px; }
-    .pag-btn { background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 8px; padding: 6px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: background 0.15s; }
-    .pag-btn:hover:not(:disabled) { background: var(--paper-3); }
-    .pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .pag-btn.aktiv { background: var(--ink); color: var(--white); border-color: var(--ink); }
-
-    /* Modal */
+    /* MODAL */
     .modal-bg { position: fixed; inset: 0; background: rgba(13,13,13,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
     .modal-bg.vis { opacity: 1; pointer-events: all; }
     .modal { background: var(--white); border-radius: 20px; padding: 32px; width: min(100%, 560px); max-height: 80vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(13,13,13,0.25); transform: translateY(12px); transition: transform 0.2s; }
     .modal-bg.vis .modal { transform: translateY(0); }
-    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
     .modal-tittel { font-family: 'DM Serif Display', serif; font-size: 22px; }
-    .modal-lukk { background: var(--paper-2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .modal-lukk { background: var(--paper-2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
     .modal-lukk:hover { background: var(--paper-3); }
     .modal-meta { font-size: 12px; color: var(--ink-3); margin-bottom: 20px; }
-    .modal-seksjon { margin-bottom: 20px; }
-    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+    .modal-seksjon { margin-bottom: 16px; }
+    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
     .modal-tekst { font-size: 14px; line-height: 1.6; background: var(--paper); border-radius: 10px; padding: 14px 16px; }
 
-    @media (max-width: 700px) {
+    @media (max-width: 800px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .topbar { padding: 14px 16px; }
       .main { padding: 24px 16px; }
-      th, td { padding: 12px 14px; }
-      .td-svar { display: none; }
+    }
+    @media (max-width: 500px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -160,13 +156,26 @@
   <div class="main">
     <div class="page-title">Samtalelogg</div>
     <div class="page-sub" id="page-sub">Oversikt over alle kundesamtaler</div>
-    <div id="debug-panel" style="display:none;background:#1e1e2e;color:#cdd6f4;font-family:monospace;font-size:12px;border-radius:12px;padding:16px;margin-bottom:24px;line-height:1.8;white-space:pre-wrap;"></div>
+
+    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Totalt samtaler</div><div class="stat-value" id="stat-totalt">–</div></div>
       <div class="stat-card"><div class="stat-label">Bookingforespørsler</div><div class="stat-value gold" id="stat-booking">–</div></div>
       <div class="stat-card"><div class="stat-label">Siste 7 dager</div><div class="stat-value" id="stat-uke">–</div></div>
       <div class="stat-card"><div class="stat-label">Konverteringsrate</div><div class="stat-value gold" id="stat-rate">–</div></div>
     </div>
+
+    <!-- Diagram -->
+    <div class="chart-card">
+      <div class="chart-tittel">Aktivitet siste 14 dager</div>
+      <div class="chart-wrap" id="chart-wrap"></div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--paper-3)"></div>Samtaler</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Bookingforespørsler</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
     <div class="toolbar">
       <input class="filter-input" id="sok" placeholder="Søk i meldinger, navn..." type="text" />
       <select class="filter-select" id="filter-booking">
@@ -175,31 +184,13 @@
       </select>
       <button class="export-btn" id="export-btn">↓ Eksporter CSV</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Tidspunkt</th>
-            <th>Navn</th>
-            <th>Melding</th>
-            <th>Svar</th>
-            <th>Booking</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tabell-body">
-          <tr><td colspan="6" class="empty">Laster samtaler...</td></tr>
-        </tbody>
-      </table>
-      <div class="paginering" id="paginering" style="display:none">
-        <span id="pag-info"></span>
-        <div class="pag-knapper" id="pag-knapper"></div>
-      </div>
-    </div>
+
+    <!-- Samtaler gruppert per dag -->
+    <div id="samtale-liste"><div class="empty">Laster samtaler...</div></div>
   </div>
 </div>
 
-<!-- Modal for full samtale -->
+<!-- Modal -->
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div class="modal-header">
@@ -221,19 +212,14 @@
 <script>
   const SUPABASE_URL      = "https://wdkbgkcyaxphbampqoek.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_5yIjNxZUhEbohNuZqG5FXQ_3Q85svjp";
-  const SERVER_URL        = "https://ai-chat-backend-6.onrender.com";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ── Escaping – forhindrer XSS ───────────────────────────────────────────────
   function esc(str) {
     return String(str ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  // ── DOM-referanser ───────────────────────────────────────────────────────────
   const loginScreen   = document.getElementById("login-screen");
   const dashScreen    = document.getElementById("dashboard-screen");
   const loginBtn      = document.getElementById("login-btn");
@@ -241,110 +227,57 @@
   const loginFeil     = document.getElementById("login-feil");
   const epostInput    = document.getElementById("epost");
   const passordInput  = document.getElementById("passord");
-  const tabellBody    = document.getElementById("tabell-body");
   const sokInput      = document.getElementById("sok");
   const filterBooking = document.getElementById("filter-booking");
   const exportBtn     = document.getElementById("export-btn");
   const modalBg       = document.getElementById("modal-bg");
-  const pagInfo       = document.getElementById("pag-info");
-  const pagKnapper    = document.getElementById("pag-knapper");
-  const paginering    = document.getElementById("paginering");
+  const samtaleListe  = document.getElementById("samtale-liste");
 
-  // ── State ────────────────────────────────────────────────────────────────────
-  let alleRader   = [];
-  let filtrerte   = [];
-  let side        = 1;
-  const perSide   = 25;
+  let alleRader = [];
+  let filtrerte = [];
+  // Antall synlige rader per dag (kan utvides)
+  const dagTilstand = {};
+  const PER_DAG_START = 5;
 
-  // ── Auth ─────────────────────────────────────────────────────────────────────
+  // AUTH
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (session) {
-      await visDashboard(session.user);
-    } else {
-      loginScreen.style.display = "flex";
-      dashScreen.style.display  = "none";
-    }
+    if (session) await visDashboard(session.user);
+    else { loginScreen.style.display = "flex"; dashScreen.style.display = "none"; }
   });
 
   loginBtn.addEventListener("click", async () => {
-    const epost   = epostInput.value.trim();
-    const passord = passordInput.value;
+    const epost = epostInput.value.trim(), passord = passordInput.value;
     if (!epost || !passord) { loginFeil.textContent = "Fyll inn e-post og passord."; return; }
-    loginBtn.disabled    = true;
-    loginBtn.textContent = "Logger inn...";
-    loginFeil.textContent = "";
+    loginBtn.disabled = true; loginBtn.textContent = "Logger inn..."; loginFeil.textContent = "";
     const { error } = await sb.auth.signInWithPassword({ email: epost, password: passord });
-    if (error) {
-      loginFeil.textContent    = "Feil e-post eller passord.";
-      loginBtn.disabled        = false;
-      loginBtn.textContent     = "Logg inn";
-    }
+    if (error) { loginFeil.textContent = "Feil e-post eller passord."; loginBtn.disabled = false; loginBtn.textContent = "Logg inn"; }
   });
-
   logoutBtn.addEventListener("click", () => sb.auth.signOut());
   passordInput.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
 
-  // ── Dashboard ────────────────────────────────────────────────────────────────
-  const debugPanel = document.getElementById("debug-panel");
-  function dbg(tekst) {
-    debugPanel.style.display = "block";
-    debugPanel.textContent += "▶ " + tekst + "\n";
-    console.log("[DEBUG]", tekst);
-  }
-
-  function visLasteFeil(melding) {
-    tabellBody.innerHTML = `<tr><td colspan="6" class="empty" style="color:#ef4444">${esc(melding)}</td></tr>`;
-  }
-
+  // DASHBOARD
   async function visDashboard(user) {
     loginScreen.style.display = "none";
-    dashScreen.style.display  = "block";
-    dbg("Innlogget som: " + user.email);
-
+    dashScreen.style.display = "block";
     try {
-      dbg("Henter samtaler via REST API...");
-      tabellBody.innerHTML = `<tr><td colspan="6" class="empty">Henter samtaler…</td></tr>`;
-
-      // Bruk Supabase REST API direkte – omgår JS-klient som henger
       const restRes = await fetch(
         SUPABASE_URL + "/rest/v1/samtaler?select=*&order=opprettet.desc&limit=500",
-        {
-          headers: {
-            "apikey":        SUPABASE_ANON_KEY,
-            "Authorization": "Bearer " + SUPABASE_ANON_KEY,
-            "Content-Type":  "application/json"
-          }
-        }
+        { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY } }
       );
-
-      dbg("REST HTTP status: " + restRes.status);
-
       if (!restRes.ok) {
-        const feilTekst = await restRes.text();
-        dbg("FEIL: " + feilTekst);
-        visLasteFeil("Supabase REST feil " + restRes.status + ": " + feilTekst);
+        samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Feil ${restRes.status}: Kunne ikke laste samtaler.</div>`;
         return;
       }
-
       const data = await restRes.json();
-      dbg("Ferdig! " + data.length + " samtaler lastet.");
-
       const bedrift = data.length > 0 ? data[0].bedrift : user.email;
-      dbg("Bedrift: " + bedrift);
       document.getElementById("topbar-bedrift").textContent = bedrift;
       document.getElementById("page-sub").textContent = `Samtaler for ${bedrift}`;
-
-      if (data.length > 0) {
-        setTimeout(() => { debugPanel.style.display = "none"; }, 3000);
-      }
-
       alleRader = data;
-      oppdaterStats(alleRader);
+      oppdaterStats(data);
+      tegnDiagram(data);
       filtrer();
-
     } catch (err) {
-      dbg("UVENTET FEIL: " + err.message);
-      visLasteFeil("Uventet feil: " + err.message);
+      samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Uventet feil: ${esc(err.message)}</div>`;
     }
   }
 
@@ -354,178 +287,213 @@
     document.getElementById("stat-totalt").textContent  = data.length;
     document.getElementById("stat-booking").textContent = bookinger;
     document.getElementById("stat-uke").textContent     = data.filter(r => new Date(r.opprettet) > enUkeSiden).length;
-    document.getElementById("stat-rate").textContent    = data.length
-      ? Math.round(bookinger / data.length * 100) + "%"
-      : "0%";
+    document.getElementById("stat-rate").textContent    = data.length ? Math.round(bookinger / data.length * 100) + "%" : "0%";
   }
 
-  // ── Filtrering og paginering ─────────────────────────────────────────────────
+  // DIAGRAM – søylediagram siste 14 dager
+  function tegnDiagram(data) {
+    const dager = 14;
+    const dagData = [];
+    for (let i = dager - 1; i >= 0; i--) {
+      const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+      const neste = new Date(d); neste.setDate(neste.getDate() + 1);
+      const rader = data.filter(r => { const t = new Date(r.opprettet); return t >= d && t < neste; });
+      dagData.push({
+        dag: d.toLocaleDateString("no-NO", { day: "numeric", month: "short" }),
+        totalt: rader.length,
+        booking: rader.filter(r => r.booking_vist).length
+      });
+    }
+    const maks = Math.max(...dagData.map(d => d.totalt), 1);
+    const wrap = document.getElementById("chart-wrap");
+    wrap.innerHTML = dagData.map(d => {
+      const totH    = Math.round((d.totalt  / maks) * 100);
+      const bookH   = Math.round((d.booking / maks) * 100);
+      const restH   = totH - bookH;
+      return `<div class="chart-col">
+        <div class="bar-tall">${d.totalt > 0 ? d.totalt : ""}</div>
+        <div class="bar-stack">
+          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}%"></div>` : ""}
+          ${restH > 0 ? `<div class="bar samtaler" style="height:${restH}%"></div>` : ""}
+          ${totH === 0 ? `<div class="bar samtaler" style="height:2px;opacity:0.3"></div>` : ""}
+        </div>
+        <div class="bar-dag">${esc(d.dag)}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // FILTRERING
   function filtrer() {
-    const sok        = sokInput.value.toLowerCase();
+    const sok = sokInput.value.toLowerCase();
     const kunBooking = filterBooking.value === "booking";
     filtrerte = alleRader.filter(r =>
-      (r.melding?.toLowerCase().includes(sok) ||
-       r.svar?.toLowerCase().includes(sok)    ||
-       r.navn?.toLowerCase().includes(sok))   &&
+      (r.melding?.toLowerCase().includes(sok) || r.svar?.toLowerCase().includes(sok) || r.navn?.toLowerCase().includes(sok)) &&
       (!kunBooking || r.booking_vist)
     );
-    side = 1;
-    visRader();
+    visListe();
   }
-
-  function lagAvatar(navn, harBooking) {
-    const bokstav = navn && navn !== "Ukjent" ? navn.charAt(0).toUpperCase() : "?";
-    const cls = harBooking ? "avatar booking-av" : "avatar";
-    return `<div class="${cls}">${esc(bokstav)}</div>`;
-  }
-
-  function visRader() {
-    if (!filtrerte.length) {
-      tabellBody.innerHTML = `<tr><td colspan="6" class="empty">Ingen samtaler funnet.</td></tr>`;
-      paginering.style.display = "none";
-      return;
-    }
-
-    const start    = (side - 1) * perSide;
-    const sideSli  = filtrerte.slice(start, start + perSide);
-    const totSider = Math.ceil(filtrerte.length / perSide);
-
-    // Grupper rader per dag
-    let html = "";
-    let sisteDag = "";
-
-    sideSli.forEach(r => {
-      const d = new Date(r.opprettet);
-      const dagNokkel = d.toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
-      const dagLabel  = d.toLocaleDateString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-      const kl = d.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
-      const navn = r.navn && r.navn !== "Ukjent" ? r.navn : "Ukjent";
-
-      // Ny datogruppe-header
-      if (dagNokkel !== sisteDag) {
-        // Er det i dag eller i går?
-        const iDag = new Date(); iDag.setHours(0,0,0,0);
-        const iGar = new Date(iDag); iGar.setDate(iGar.getDate() - 1);
-        const dDag = new Date(d); dDag.setHours(0,0,0,0);
-        let labelTekst = dagLabel.charAt(0).toUpperCase() + dagLabel.slice(1);
-        if (dDag.getTime() === iDag.getTime()) labelTekst = "I dag – " + labelTekst;
-        else if (dDag.getTime() === iGar.getTime()) labelTekst = "I går – " + labelTekst;
-
-        html += `<tr class="dato-rad"><td colspan="6">${esc(labelTekst)}</td></tr>`;
-        sisteDag = dagNokkel;
-      }
-
-      html += `<tr class="data-row" data-id="${esc(String(r.id))}">
-        <td class="avatar-celle">${lagAvatar(navn, r.booking_vist)}</td>
-        <td class="navn-celle">
-          <div class="navn-tekst">${esc(navn)}</div>
-          <div class="kl-tekst">kl. ${esc(kl)}</div>
-        </td>
-        <td class="td-melding"><div class="td-tekst">${esc(r.melding)}</div></td>
-        <td class="td-svar"><div class="td-tekst">${esc(r.svar)}</div></td>
-        <td>${r.booking_vist ? '<span class="booking-badge">📅 Booking</span>' : "–"}</td>
-        <td><button class="slett-btn" title="Slett samtale" data-id="${esc(String(r.id))}">🗑</button></td>
-      </tr>`;
-    });
-
-    tabellBody.innerHTML = html;
-
-    // Paginering
-    if (totSider > 1) {
-      paginering.style.display = "flex";
-      pagInfo.textContent = `Viser ${start + 1}–${Math.min(start + perSide, filtrerte.length)} av ${filtrerte.length}`;
-      pagKnapper.innerHTML = "";
-
-      const lagBtn = (tekst, aktiv, onClick) => {
-        const b = document.createElement("button");
-        b.className = "pag-btn" + (aktiv ? " aktiv" : "");
-        b.textContent = tekst;
-        b.disabled = aktiv;
-        b.addEventListener("click", onClick);
-        pagKnapper.appendChild(b);
-      };
-
-      lagBtn("← Forrige", side === 1, () => { side--; visRader(); });
-      // Sidetall
-      for (let s = Math.max(1, side - 2); s <= Math.min(totSider, side + 2); s++) {
-        const erAktiv = s === side;
-        const sKopi = s;
-        lagBtn(String(s), erAktiv, () => { side = sKopi; visRader(); });
-      }
-      lagBtn("Neste →", side === totSider, () => { side++; visRader(); });
-    } else {
-      paginering.style.display = "none";
-    }
-
-    // Radklikk → modal
-    tabellBody.querySelectorAll("tr.data-row").forEach(tr => {
-      tr.addEventListener("click", e => {
-        if (e.target.closest(".slett-btn")) return; // ikke åpne modal ved slett-klikk
-        const id = tr.dataset.id;
-        const r  = alleRader.find(x => String(x.id) === id);
-        if (r) visModal(r);
-      });
-    });
-
-    // Slett-knapper
-    tabellBody.querySelectorAll(".slett-btn").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        slettSamtale(btn.dataset.id);
-      });
-    });
-  }
-
   sokInput.addEventListener("input", filtrer);
   filterBooking.addEventListener("change", filtrer);
 
-  // ── Sletting ─────────────────────────────────────────────────────────────────
+  // VIS LISTE GRUPPERT PER DAG
+  function visListe() {
+    if (!filtrerte.length) {
+      samtaleListe.innerHTML = `<div class="empty">Ingen samtaler funnet.</div>`;
+      return;
+    }
+
+    // Grupper per dag
+    const grupper = {};
+    filtrerte.forEach(r => {
+      const d = new Date(r.opprettet);
+      const nokkel = d.toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
+      if (!grupper[nokkel]) grupper[nokkel] = { label: lagDagLabel(d), rader: [], harBooking: false };
+      grupper[nokkel].rader.push(r);
+      if (r.booking_vist) grupper[nokkel].harBooking = true;
+    });
+
+    samtaleListe.innerHTML = "";
+
+    Object.entries(grupper).forEach(([nokkel, gruppe]) => {
+      if (!dagTilstand[nokkel]) dagTilstand[nokkel] = { vis: PER_DAG_START, apen: true };
+      const tilstand = dagTilstand[nokkel];
+
+      const div = document.createElement("div");
+      div.className = "dag-gruppe";
+
+      const bookingTekst = gruppe.harBooking
+        ? `<span class="dag-badge har-booking">📅 ${gruppe.rader.filter(r => r.booking_vist).length} booking</span>`
+        : "";
+
+      div.innerHTML = `
+        <div class="dag-header" data-nokkel="${esc(nokkel)}">
+          <div class="dag-header-left">
+            <span class="dag-label">${esc(gruppe.label)}</span>
+            <span class="dag-badge">${gruppe.rader.length} samtaler</span>
+            ${bookingTekst}
+          </div>
+          <span class="dag-chevron ${tilstand.apen ? "" : "lukket"}">▼</span>
+        </div>
+        <div class="dag-rader" style="${tilstand.apen ? "" : "display:none"}"></div>
+      `;
+
+      // Toggle dag åpen/lukket
+      div.querySelector(".dag-header").addEventListener("click", () => {
+        const raderEl = div.querySelector(".dag-rader");
+        const chevron = div.querySelector(".dag-chevron");
+        tilstand.apen = !tilstand.apen;
+        raderEl.style.display = tilstand.apen ? "" : "none";
+        chevron.classList.toggle("lukket", !tilstand.apen);
+      });
+
+      const raderEl = div.querySelector(".dag-rader");
+      fyllRader(raderEl, gruppe.rader, tilstand, nokkel, gruppe);
+
+      samtaleListe.appendChild(div);
+    });
+  }
+
+  function fyllRader(container, rader, tilstand, nokkel, gruppe) {
+    container.innerHTML = "";
+    const synlige = rader.slice(0, tilstand.vis);
+
+    synlige.forEach(r => {
+      const d    = new Date(r.opprettet);
+      const kl   = d.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
+      const navn = r.navn && r.navn !== "Ukjent" ? r.navn : "Ukjent";
+      const bokstav = navn !== "Ukjent" ? navn.charAt(0).toUpperCase() : "?";
+
+      const rad = document.createElement("div");
+      rad.className = "samtale-rad";
+      rad.innerHTML = `
+        <div class="avatar ${r.booking_vist ? "booking-av" : ""}">${esc(bokstav)}</div>
+        <div class="rad-info">
+          <div class="rad-top">
+            <span class="rad-navn">${esc(navn)}</span>
+            <span class="rad-kl">kl. ${esc(kl)}</span>
+            ${r.booking_vist ? '<span class="booking-badge">📅 Booking</span>' : ""}
+          </div>
+          <div class="rad-melding">${esc(r.melding || "–")}</div>
+        </div>
+        <button class="slett-btn" title="Slett" data-id="${esc(String(r.id))}">🗑</button>
+      `;
+
+      rad.addEventListener("click", e => {
+        if (e.target.closest(".slett-btn")) return;
+        visModal(r);
+      });
+      rad.querySelector(".slett-btn").addEventListener("click", e => {
+        e.stopPropagation();
+        slettSamtale(r.id);
+      });
+
+      container.appendChild(rad);
+    });
+
+    // "Vis mer"-knapp hvis det er flere
+    if (rader.length > tilstand.vis) {
+      const igjen = rader.length - tilstand.vis;
+      const visMer = document.createElement("div");
+      visMer.className = "dag-vis-mer";
+      visMer.textContent = `Vis ${Math.min(igjen, 10)} til (${igjen} gjenstår)`;
+      visMer.addEventListener("click", () => {
+        tilstand.vis += 10;
+        fyllRader(container, rader, tilstand, nokkel, gruppe);
+      });
+      container.appendChild(visMer);
+    }
+  }
+
+  function lagDagLabel(d) {
+    const iDag = new Date(); iDag.setHours(0,0,0,0);
+    const iGar = new Date(iDag); iGar.setDate(iGar.getDate() - 1);
+    const dDag = new Date(d); dDag.setHours(0,0,0,0);
+    const label = d.toLocaleDateString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const stor = label.charAt(0).toUpperCase() + label.slice(1);
+    if (dDag.getTime() === iDag.getTime()) return "I dag – " + stor;
+    if (dDag.getTime() === iGar.getTime()) return "I går – " + stor;
+    return stor;
+  }
+
+  // SLETT
   async function slettSamtale(id) {
     if (!confirm("Slett denne samtalen? Dette kan ikke angres.")) return;
     const { error } = await sb.from("samtaler").delete().eq("id", id);
-    if (error) { alert("Kunne ikke slette samtalen. Prøv igjen."); return; }
+    if (error) { alert("Kunne ikke slette. Prøv igjen."); return; }
     alleRader = alleRader.filter(r => String(r.id) !== String(id));
     oppdaterStats(alleRader);
+    tegnDiagram(alleRader);
     filtrer();
   }
 
-  // ── Modal ─────────────────────────────────────────────────────────────────────
+  // MODAL
   function visModal(r) {
-    const dato = new Date(r.opprettet).toLocaleString("no-NO", {
-      weekday: "long", day: "numeric", month: "long",
-      year: "numeric", hour: "2-digit", minute: "2-digit"
-    });
+    const dato = new Date(r.opprettet).toLocaleString("no-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
     document.getElementById("modal-navn").textContent    = r.navn || "Ukjent kunde";
     document.getElementById("modal-meta").textContent    = dato + (r.booking_vist ? " · Bookingforespørsel" : "");
     document.getElementById("modal-melding").textContent = r.melding || "–";
-    document.getElementById("modal-svar").textContent    = r.svar    || "–";
+    document.getElementById("modal-svar").textContent    = r.svar || "–";
     modalBg.classList.add("vis");
   }
-
   document.getElementById("modal-lukk").addEventListener("click", () => modalBg.classList.remove("vis"));
   modalBg.addEventListener("click", e => { if (e.target === modalBg) modalBg.classList.remove("vis"); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") modalBg.classList.remove("vis"); });
 
-  // ── CSV-eksport ───────────────────────────────────────────────────────────────
+  // CSV EKSPORT
   exportBtn.addEventListener("click", () => {
     if (!filtrerte.length) return;
     const header = ["Tidspunkt", "Navn", "Melding", "Svar", "Booking"];
     const rader  = filtrerte.map(r => [
       new Date(r.opprettet).toLocaleString("no-NO"),
-      r.navn || "Ukjent",
-      r.melding || "",
-      r.svar    || "",
+      r.navn || "Ukjent", r.melding || "", r.svar || "",
       r.booking_vist ? "Ja" : "Nei"
     ].map(v => `"${String(v).replace(/"/g, '""')}"`));
-
     const csv  = [header, ...rader].map(r => r.join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `samtaler-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `samtaler-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
   });
 </script>
 </body>
