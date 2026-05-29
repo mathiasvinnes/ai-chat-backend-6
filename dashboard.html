@@ -476,6 +476,20 @@
       visMer.addEventListener("click", () => { tilstand.vis += 10; fyllRader(container, rader, tilstand); });
       container.appendChild(visMer);
     }
+
+    // Vis mindre – bare hvis vi viser mer enn standard
+    if (tilstand.vis > PER_DAG_START && rader.length > PER_DAG_START) {
+      const visMind = document.createElement("div");
+      visMind.className = "dag-vis-mer";
+      visMind.style.color = "var(--ink-3)";
+      visMind.textContent = "Vis færre ↑";
+      visMind.addEventListener("click", () => {
+        tilstand.vis = PER_DAG_START;
+        fyllRader(container, rader, tilstand);
+        container.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+      container.appendChild(visMind);
+    }
   }
 
   // Bygg chat-bobler: kundemelding + AI-svar
