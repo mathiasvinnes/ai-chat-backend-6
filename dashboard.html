@@ -188,12 +188,59 @@
       <div class="stat-card"><div class="stat-label">Konverteringsrate</div><div class="stat-value gold" id="stat-rate">–</div></div>
     </div>
 
-    <div class="chart-card">
-      <div class="chart-tittel">Aktivitet siste 14 dager</div>
-      <div class="chart-wrap" id="chart-wrap"></div>
-      <div class="chart-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--paper-3)"></div>Samtaler</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Bookingforespørsler</div>
+    <!-- Rad 1: Donut + Timediagram side om side -->
+    <!-- Donut gir øyeblikkelig oversikt over konvertering, timediagram viser NÅR kundene er aktive -->
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px;">
+
+      <!-- Donutdiagram – konverteringsrate -->
+      <div class="chart-card" style="display:flex;flex-direction:column;">
+        <div class="chart-tittel">Konverteringsrate</div>
+        <div style="display:flex;align-items:center;gap:20px;flex:1;">
+          <canvas id="donut-canvas" width="110" height="110" style="flex-shrink:0;"></canvas>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Booking</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--paper-3)"></div>Vanlig samtale</div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:8px;">
+          <span style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--gold)" id="donut-rate">–</span>
+          <span style="font-size:12px;color:var(--ink-3);margin-left:4px;">av samtalene endte i booking</span>
+        </div>
+      </div>
+
+      <!-- Timediagram – når er kundene aktive -->
+      <div class="chart-card">
+        <div class="chart-tittel">Når chatter kundene? (time på dagen)</div>
+        <div class="chart-wrap" id="time-wrap" style="height:100px;"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;padding:0 2px;">
+          <span style="font-size:10px;color:var(--ink-3);">00:00</span>
+          <span style="font-size:10px;color:var(--ink-3);">06:00</span>
+          <span style="font-size:10px;color:var(--ink-3);">12:00</span>
+          <span style="font-size:10px;color:var(--ink-3);">18:00</span>
+          <span style="font-size:10px;color:var(--ink-3);">23:00</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--ink-3);" id="time-topp"></div>
+      </div>
+    </div>
+
+    <!-- Rad 2: Ukediagram + 14-dagers trend – begge handler om TID, naturlig å se sammen -->
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:28px;">
+
+      <!-- Ukediagram – hvilke dager er travlest -->
+      <div class="chart-card">
+        <div class="chart-tittel">Travleste dager</div>
+        <div style="display:flex;gap:6px;align-items:flex-end;height:90px;" id="uke-wrap"></div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:8px;" id="uke-topp"></div>
+      </div>
+
+      <!-- 14-dagers trend – utvikling over tid -->
+      <div class="chart-card">
+        <div class="chart-tittel">Utvikling siste 14 dager</div>
+        <div class="chart-wrap" id="chart-wrap" style="height:100px;"></div>
+        <div class="chart-legend" style="margin-top:10px;">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--paper-3)"></div>Samtaler</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Booking</div>
+        </div>
       </div>
     </div>
 
@@ -302,8 +349,17 @@
     document.getElementById("stat-rate").textContent    = data.length ? Math.round(bookinger / data.length * 100) + "%" : "0%";
   }
 
-  // ── DIAGRAM ──────────────────────────────────────────────────────────────────
+  // ── DIAGRAMMER ───────────────────────────────────────────────────────────────
+
   function tegnDiagram(data) {
+    tegnTrend(data);
+    tegnDonut(data);
+    tegnTime(data);
+    tegnUke(data);
+  }
+
+  // 14-dagers søylediagram
+  function tegnTrend(data) {
     const dager = 14;
     const dagData = [];
     for (let i = dager - 1; i >= 0; i--) {
@@ -331,6 +387,113 @@
         <div class="bar-dag">${esc(d.dag)}</div>
       </div>`;
     }).join("");
+  }
+
+  // Donutdiagram – konverteringsrate
+  function tegnDonut(data) {
+    const totalt  = data.length;
+    const booking = data.filter(r => r.booking_vist).length;
+    const rate    = totalt > 0 ? Math.round(booking / totalt * 100) : 0;
+    document.getElementById("donut-rate").textContent = rate + "%";
+
+    const canvas = document.getElementById("donut-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const cx = 55, cy = 55, r = 38, lw = 14;
+    const andel = totalt > 0 ? booking / totalt : 0;
+
+    ctx.clearRect(0, 0, 110, 110);
+
+    // Bakgrunn
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = "#e4ddd1";
+    ctx.lineWidth = lw;
+    ctx.stroke();
+
+    // Booking-andel
+    if (andel > 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * andel);
+      ctx.strokeStyle = "#b8924a";
+      ctx.lineWidth = lw;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+
+    // Tekst i midten
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--ink") || "#0d0d0d";
+    ctx.font = "bold 16px 'DM Sans', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(booking, cx, cy + 6);
+  }
+
+  // Timediagram – aktivitet per time
+  function tegnTime(data) {
+    const timer = Array(24).fill(0).map(() => ({ totalt: 0, booking: 0 }));
+    data.forEach(r => {
+      const t = new Date(r.opprettet);
+      const h = t.getHours();
+      timer[h].totalt++;
+      if (r.booking_vist) timer[h].booking++;
+    });
+    const maks = Math.max(...timer.map(t => t.totalt), 1);
+    const toppTime = timer.indexOf(timer.reduce((a, b) => b.totalt > a.totalt ? b : a));
+
+    document.getElementById("time-wrap").innerHTML = timer.map((t, i) => {
+      const totH  = Math.round((t.totalt  / maks) * 100);
+      const bookH = Math.round((t.booking / maks) * 100);
+      const restH = totH - bookH;
+      return `<div class="chart-col" style="gap:3px;">
+        <div class="bar-tall" style="font-size:9px;">${t.totalt > 0 ? t.totalt : ""}</div>
+        <div class="bar-stack">
+          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}%"></div>` : ""}
+          ${restH > 0 ? `<div class="bar samtaler" style="height:${restH}%"></div>` : ""}
+          ${totH === 0 ? `<div class="bar samtaler" style="height:2px;opacity:0.2"></div>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+
+    if (timer[toppTime].totalt > 0) {
+      document.getElementById("time-topp").textContent =
+        `Travlest kl. ${String(toppTime).padStart(2,"0")}:00 – ${String(toppTime+1).padStart(2,"0")}:00 med ${timer[toppTime].totalt} samtaler`;
+    }
+  }
+
+  // Ukediagram – aktivitet per ukedag
+  function tegnUke(data) {
+    const dagNavn = ["Søn","Man","Tir","Ons","Tor","Fre","Lør"];
+    const uker = Array(7).fill(0).map(() => ({ totalt: 0, booking: 0 }));
+    data.forEach(r => {
+      const dag = new Date(r.opprettet).getDay();
+      uker[dag].totalt++;
+      if (r.booking_vist) uker[dag].booking++;
+    });
+    // Start på mandag (1,2,3,4,5,6,0)
+    const rekkefølge = [1,2,3,4,5,6,0];
+    const maks = Math.max(...uker.map(u => u.totalt), 1);
+    const toppDag = rekkefølge.reduce((a, b) => uker[b].totalt > uker[a].totalt ? b : a);
+
+    document.getElementById("uke-wrap").innerHTML = rekkefølge.map(i => {
+      const u     = uker[i];
+      const totH  = Math.round((u.totalt  / maks) * 90);
+      const bookH = Math.round((u.booking / maks) * 90);
+      const restH = totH - bookH;
+      return `<div class="chart-col" style="gap:4px;">
+        <div class="bar-tall">${u.totalt > 0 ? u.totalt : ""}</div>
+        <div class="bar-stack">
+          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}%"></div>` : ""}
+          ${restH > 0 ? `<div class="bar samtaler" style="height:${restH}%"></div>` : ""}
+          ${totH === 0 ? `<div class="bar samtaler" style="height:2px;opacity:0.2"></div>` : ""}
+        </div>
+        <div class="bar-dag">${dagNavn[i]}</div>
+      </div>`;
+    }).join("");
+
+    if (uker[toppDag].totalt > 0) {
+      document.getElementById("uke-topp").textContent =
+        `Travlest: ${dagNavn[toppDag]}dag med ${uker[toppDag].totalt} samtaler`;
+    }
   }
 
   // ── FILTRERING ───────────────────────────────────────────────────────────────
