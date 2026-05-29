@@ -286,37 +286,43 @@
     dbg("Innlogget som: " + user.email);
 
     try {
-      dbg("Henter samtaler fra Supabase (uten bedrift-filter)...");
+      dbg("Henter samtaler via REST API...");
       tabellBody.innerHTML = `<tr><td colspan="6" class="empty">Henter samtaler…</td></tr>`;
 
-      const { data, error } = await sb
-        .from("samtaler")
-        .select("*")
-        .order("opprettet", { ascending: false })
-        .limit(500);
+      // Bruk Supabase REST API direkte – omgår JS-klient som henger
+      const restRes = await fetch(
+        SUPABASE_URL + "/rest/v1/samtaler?select=*&order=opprettet.desc&limit=500",
+        {
+          headers: {
+            "apikey":        SUPABASE_ANON_KEY,
+            "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+            "Content-Type":  "application/json"
+          }
+        }
+      );
 
-      if (error) {
-        dbg("FEIL fra Supabase: " + JSON.stringify(error));
-        visLasteFeil("Supabase-feil: " + error.message);
+      dbg("REST HTTP status: " + restRes.status);
+
+      if (!restRes.ok) {
+        const feilTekst = await restRes.text();
+        dbg("FEIL: " + feilTekst);
+        visLasteFeil("Supabase REST feil " + restRes.status + ": " + feilTekst);
         return;
       }
 
-      dbg("Ferdig! " + (data ? data.length : 0) + " samtaler lastet.");
+      const data = await restRes.json();
+      dbg("Ferdig! " + data.length + " samtaler lastet.");
 
-      // Hent bedriftsnavn fra første rad
-      const bedrift = (data && data.length > 0)
-        ? data[0].bedrift
-        : user.email;
-
+      const bedrift = data.length > 0 ? data[0].bedrift : user.email;
       dbg("Bedrift: " + bedrift);
       document.getElementById("topbar-bedrift").textContent = bedrift;
       document.getElementById("page-sub").textContent = `Samtaler for ${bedrift}`;
 
-      if (data && data.length > 0) {
+      if (data.length > 0) {
         setTimeout(() => { debugPanel.style.display = "none"; }, 3000);
       }
 
-      alleRader = data || [];
+      alleRader = data;
       oppdaterStats(alleRader);
       filtrer();
 
@@ -476,4 +482,4 @@
   });
 </script>
 </body>
-</html>   
+</html>
