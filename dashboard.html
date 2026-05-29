@@ -211,7 +211,7 @@
       <!-- Timediagram – når er kundene aktive -->
       <div class="chart-card">
         <div class="chart-tittel">Når chatter kundene? (time på dagen)</div>
-        <div class="chart-wrap" id="time-wrap" style="height:100px;"></div>
+        <div class="chart-wrap" id="time-wrap" style="height:140px;"></div>
         <div style="display:flex;justify-content:space-between;margin-top:4px;padding:0 2px;">
           <span style="font-size:10px;color:var(--ink-3);">00:00</span>
           <span style="font-size:10px;color:var(--ink-3);">06:00</span>
@@ -229,14 +229,14 @@
       <!-- Ukediagram – hvilke dager er travlest -->
       <div class="chart-card">
         <div class="chart-tittel">Travleste dager</div>
-        <div style="display:flex;gap:6px;align-items:flex-end;height:90px;" id="uke-wrap"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;height:140px;" id="uke-wrap"></div>
         <div style="font-size:11px;color:var(--ink-3);margin-top:8px;" id="uke-topp"></div>
       </div>
 
       <!-- 14-dagers trend – utvikling over tid -->
       <div class="chart-card">
         <div class="chart-tittel">Utvikling siste 14 dager</div>
-        <div class="chart-wrap" id="chart-wrap" style="height:100px;"></div>
+        <div class="chart-wrap" id="chart-wrap" style="height:140px;"></div>
         <div class="chart-legend" style="margin-top:10px;">
           <div class="legend-item"><div class="legend-dot" style="background:var(--paper-3)"></div>Samtaler</div>
           <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Booking</div>
@@ -377,14 +377,18 @@
       const totH  = Math.round((d.totalt  / maks) * 100);
       const bookH = Math.round((d.booking / maks) * 100);
       const restH = totH - bookH;
+      const totPx  = Math.round((d.totalt  / maks) * 120);
+      const bookPx = Math.round((d.booking / maks) * 120);
+      const restPx = totPx - bookPx;
       return `<div class="chart-col">
-        <div class="bar-tall">${d.totalt > 0 ? d.totalt : ""}</div>
+        <div class="bar-tall" style="font-size:11px;font-weight:600;color:var(--ink-2);">${d.totalt > 0 ? d.totalt : ""}</div>
         <div class="bar-stack">
-          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}%"></div>` : ""}
-          ${restH > 0 ? `<div class="bar samtaler" style="height:${restH}%"></div>` : ""}
-          ${totH === 0 ? `<div class="bar samtaler" style="height:2px;opacity:0.3"></div>` : ""}
+          ${bookPx > 0 ? `<div class="bar booking" style="height:${bookPx}px;border-radius:5px 5px 0 0;"></div>` : ""}
+          ${(restPx > 0 && bookPx > 0) ? `<div class="bar samtaler" style="height:${restPx}px;border-radius:0;"></div>` : ""}
+          ${(restPx > 0 && bookPx === 0) ? `<div class="bar samtaler" style="height:${restPx}px;border-radius:5px 5px 0 0;"></div>` : ""}
+          ${totPx === 0 ? `<div style="height:3px;background:var(--paper-3);opacity:0.3;border-radius:2px;"></div>` : ""}
         </div>
-        <div class="bar-dag">${esc(d.dag)}</div>
+        <div class="bar-dag" style="font-size:11px;">${esc(d.dag)}</div>
       </div>`;
     }).join("");
   }
@@ -444,12 +448,16 @@
       const totH  = Math.round((t.totalt  / maks) * 100);
       const bookH = Math.round((t.booking / maks) * 100);
       const restH = totH - bookH;
+      const totPx2  = Math.round((t.totalt  / maks) * 120);
+      const bookPx2 = Math.round((t.booking / maks) * 120);
+      const restPx2 = totPx2 - bookPx2;
       return `<div class="chart-col" style="gap:3px;">
-        <div class="bar-tall" style="font-size:9px;">${t.totalt > 0 ? t.totalt : ""}</div>
+        <div class="bar-tall" style="font-size:10px;font-weight:600;color:var(--ink-2);">${t.totalt > 0 ? t.totalt : ""}</div>
         <div class="bar-stack">
-          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}%"></div>` : ""}
-          ${restH > 0 ? `<div class="bar samtaler" style="height:${restH}%"></div>` : ""}
-          ${totH === 0 ? `<div class="bar samtaler" style="height:2px;opacity:0.2"></div>` : ""}
+          ${bookPx2 > 0 ? `<div class="bar booking" style="height:${bookPx2}px;border-radius:4px 4px 0 0;"></div>` : ""}
+          ${(restPx2 > 0 && bookPx2 > 0) ? `<div class="bar samtaler" style="height:${restPx2}px;border-radius:0;"></div>` : ""}
+          ${(restPx2 > 0 && bookPx2 === 0) ? `<div class="bar samtaler" style="height:${restPx2}px;border-radius:4px 4px 0 0;"></div>` : ""}
+          ${totPx2 === 0 ? `<div style="height:2px;background:var(--paper-3);opacity:0.2;"></div>` : ""}
         </div>
       </div>`;
     }).join("");
@@ -476,17 +484,18 @@
 
     document.getElementById("uke-wrap").innerHTML = rekkefølge.map(i => {
       const u     = uker[i];
-      const totH  = Math.round((u.totalt  / maks) * 90);
-      const bookH = Math.round((u.booking / maks) * 90);
+      const totH  = Math.round((u.totalt  / maks) * 130);
+      const bookH = Math.round((u.booking / maks) * 130);
       const restH = totH - bookH;
-      return `<div class="chart-col" style="gap:4px;">
-        <div class="bar-tall">${u.totalt > 0 ? u.totalt : ""}</div>
-        <div class="bar-stack">
-          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}%"></div>` : ""}
-          ${restH > 0 ? `<div class="bar samtaler" style="height:${restH}%"></div>` : ""}
-          ${totH === 0 ? `<div class="bar samtaler" style="height:2px;opacity:0.2"></div>` : ""}
+      return `<div class="chart-col" style="gap:5px;">
+        <div class="bar-tall" style="font-size:12px;font-weight:600;color:var(--ink-2);">${u.totalt > 0 ? u.totalt : ""}</div>
+        <div class="bar-stack" style="min-width:28px;">
+          ${bookH > 0 ? `<div class="bar booking" style="height:${bookH}px;border-radius:5px 5px 0 0;"></div>` : ""}
+          ${(restH > 0 && bookH > 0) ? `<div class="bar samtaler" style="height:${restH}px;border-radius:0;"></div>` : ""}
+          ${(restH > 0 && bookH === 0) ? `<div class="bar samtaler" style="height:${restH}px;border-radius:5px 5px 0 0;"></div>` : ""}
+          ${totH === 0 ? `<div style="height:3px;background:var(--paper-3);opacity:0.4;border-radius:2px;"></div>` : ""}
         </div>
-        <div class="bar-dag">${dagNavn[i]}</div>
+        <div class="bar-dag" style="font-size:12px;font-weight:500;">${dagNavn[i]}</div>
       </div>`;
     }).join("");
 
