@@ -721,6 +721,13 @@
         const data  = await response.json();
         const reply = data.reply || 'Ingen respons mottatt.';
 
+        // Fyll inn navn automatisk i sidepanelet hvis AI detekterte det
+        if (data.detektertNavn && !nameInput.value.trim()) {
+          nameInput.value = data.detektertNavn;
+          nameInput.style.background = "#f0fdf4";
+          setTimeout(() => { nameInput.style.background = ""; }, 2000);
+        }
+
         addMessage('bot', reply);
         if (data.ledigeTider && data.ledigeTider.length > 0) {
           visLedigeTider(data.ledigeTider);
