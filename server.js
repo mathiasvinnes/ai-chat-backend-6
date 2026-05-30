@@ -431,6 +431,10 @@ const rateLimitBook  = lagRateLimit(5,  "book:");   // 5 bookinger/min (separat)
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.get("/", corsPublic, (_req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/chat", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "chat.html"));
 });
 
