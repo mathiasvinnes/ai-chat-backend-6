@@ -32,6 +32,9 @@
     .login-btn:hover { opacity: 0.88; }
     .login-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .login-error { margin-top: 14px; font-size: 13px; color: #f87171; text-align: center; }
+    .login-suksess { margin-top: 14px; font-size: 13px; color: #4ade80; text-align: center; display: none; }
+    .auth-lenke { background: none; border: none; color: rgba(255,255,255,0.4); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; padding: 0; transition: color 0.15s; }
+    .auth-lenke:hover { color: rgba(255,255,255,0.8); }
 
     /* TOPBAR */
     #dashboard-screen { display: none; }
@@ -158,13 +161,52 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">AI-assistent</div>
-    <div class="login-sub">Logg inn for å se dine samtaler</div>
-    <label class="login-label">E-post</label>
-    <input class="login-input" id="epost" type="email" placeholder="din@epost.no" />
-    <label class="login-label">Passord</label>
-    <input class="login-input" id="passord" type="password" placeholder="••••••••" />
-    <button class="login-btn" id="login-btn">Logg inn</button>
+    <div class="login-sub" id="auth-sub">Logg inn for å se dine samtaler</div>
+
+    <!-- Logg inn -->
+    <div id="skjema-login">
+      <label class="login-label">E-post</label>
+      <input class="login-input" id="epost" type="email" placeholder="din@epost.no" autocomplete="email" />
+      <label class="login-label">Passord</label>
+      <input class="login-input" id="passord" type="password" placeholder="••••••••" autocomplete="current-password" />
+      <button class="login-btn" id="login-btn">Logg inn</button>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;">
+        <button class="auth-lenke" id="vis-glemt">Glemt passord?</button>
+        <button class="auth-lenke" id="vis-registrer">Opprett konto</button>
+      </div>
+    </div>
+
+    <!-- Glemt passord -->
+    <div id="skjema-glemt" style="display:none;">
+      <label class="login-label">E-post</label>
+      <input class="login-input" id="glemt-epost" type="email" placeholder="din@epost.no" autocomplete="email" />
+      <button class="login-btn" id="glemt-btn">Send tilbakestillingslenke</button>
+      <button class="auth-lenke" id="vis-login-fra-glemt" style="margin-top:14px;display:block;text-align:center;">← Tilbake til innlogging</button>
+    </div>
+
+    <!-- Opprett konto -->
+    <div id="skjema-registrer" style="display:none;">
+      <label class="login-label">E-post</label>
+      <input class="login-input" id="reg-epost" type="email" placeholder="din@epost.no" autocomplete="email" />
+      <label class="login-label">Passord (min. 8 tegn)</label>
+      <input class="login-input" id="reg-passord" type="password" placeholder="••••••••" autocomplete="new-password" />
+      <label class="login-label">Bekreft passord</label>
+      <input class="login-input" id="reg-passord2" type="password" placeholder="••••••••" autocomplete="new-password" />
+      <button class="login-btn" id="reg-btn">Opprett konto</button>
+      <button class="auth-lenke" id="vis-login-fra-reg" style="margin-top:14px;display:block;text-align:center;">← Tilbake til innlogging</button>
+    </div>
+
+    <!-- Sett nytt passord (etter reset-link) -->
+    <div id="skjema-nytt-passord" style="display:none;">
+      <label class="login-label">Nytt passord (min. 8 tegn)</label>
+      <input class="login-input" id="nytt-passord" type="password" placeholder="••••••••" autocomplete="new-password" />
+      <label class="login-label">Bekreft nytt passord</label>
+      <input class="login-input" id="nytt-passord2" type="password" placeholder="••••••••" autocomplete="new-password" />
+      <button class="login-btn" id="nytt-passord-btn">Lagre nytt passord</button>
+    </div>
+
     <div class="login-error" id="login-feil"></div>
+    <div class="login-suksess" id="login-suksess"></div>
   </div>
 </div>
 
@@ -282,10 +324,7 @@
 
   const loginScreen   = document.getElementById("login-screen");
   const dashScreen    = document.getElementById("dashboard-screen");
-  const loginBtn      = document.getElementById("login-btn");
   const loginFeil     = document.getElementById("login-feil");
-  const epostInput    = document.getElementById("epost");
-  const passordInput  = document.getElementById("passord");
   const sokInput      = document.getElementById("sok");
   const filterBooking = document.getElementById("filter-booking");
   const exportBtn     = document.getElementById("export-btn");
@@ -297,21 +336,135 @@
   const dagTilstand = {};
   const PER_DAG_START = 5;
 
-  // ── AUTH ─────────────────────────────────────────────────────────────────────
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (session) await visDashboard(session.user);
-    else { loginScreen.style.display = "flex"; dashScreen.style.display = "none"; }
+  // ── AUTH HJELPEFUNKSJONER ────────────────────────────────────────────────────
+  const feilEl    = document.getElementById("login-feil");
+  const suksessEl = document.getElementById("login-suksess");
+
+  function visSkjema(id) {
+    ["skjema-login","skjema-glemt","skjema-registrer","skjema-nytt-passord"].forEach(s => {
+      document.getElementById(s).style.display = s === id ? "" : "none";
+    });
+    feilEl.textContent    = "";
+    suksessEl.style.display = "none";
+    suksessEl.textContent = "";
+  }
+
+  function visFeil(tekst) {
+    feilEl.textContent      = tekst;
+    suksessEl.style.display = "none";
+  }
+
+  function visOK(tekst) {
+    suksessEl.textContent   = tekst;
+    suksessEl.style.display = "block";
+    feilEl.textContent      = "";
+  }
+
+  function settLaster(btn, tekst, laster) {
+    btn.disabled    = laster;
+    btn.textContent = laster ? tekst : btn.dataset.original;
+  }
+
+  // Lagre original tekst på knapper
+  ["login-btn","glemt-btn","reg-btn","nytt-passord-btn"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.dataset.original = el.textContent;
   });
 
-  loginBtn.addEventListener("click", async () => {
-    const epost = epostInput.value.trim(), passord = passordInput.value;
-    if (!epost || !passord) { loginFeil.textContent = "Fyll inn e-post og passord."; return; }
-    loginBtn.disabled = true; loginBtn.textContent = "Logger inn..."; loginFeil.textContent = "";
-    const { error } = await sb.auth.signInWithPassword({ email: epost, password: passord });
-    if (error) { loginFeil.textContent = "Feil e-post eller passord."; loginBtn.disabled = false; loginBtn.textContent = "Logg inn"; }
+  // ── AUTH STATE ────────────────────────────────────────────────────────────────
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      // Bruker klikket reset-lenke i e-posten
+      loginScreen.style.display = "flex";
+      dashScreen.style.display  = "none";
+      document.getElementById("auth-sub").textContent = "Sett nytt passord";
+      visSkjema("skjema-nytt-passord");
+      return;
+    }
+    if (session) {
+      await visDashboard(session.user);
+    } else {
+      loginScreen.style.display = "flex";
+      dashScreen.style.display  = "none";
+      visSkjema("skjema-login");
+    }
   });
+
+  // ── LOGG INN ─────────────────────────────────────────────────────────────────
+  const loginBtn = document.getElementById("login-btn");
+  loginBtn.addEventListener("click", async () => {
+    const epost   = document.getElementById("epost").value.trim();
+    const passord = document.getElementById("passord").value;
+    if (!epost || !passord) { visFeil("Fyll inn e-post og passord."); return; }
+    settLaster(loginBtn, "Logger inn...", true);
+    visFeil("");
+    const { error } = await sb.auth.signInWithPassword({ email: epost, password: passord });
+    if (error) { visFeil("Feil e-post eller passord."); settLaster(loginBtn, "", false); }
+  });
+  document.getElementById("passord").addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
+
+  // ── GLEMT PASSORD ────────────────────────────────────────────────────────────
+  document.getElementById("vis-glemt").addEventListener("click", () => {
+    document.getElementById("auth-sub").textContent = "Tilbakestill passord";
+    visSkjema("skjema-glemt");
+  });
+  document.getElementById("vis-login-fra-glemt").addEventListener("click", () => {
+    document.getElementById("auth-sub").textContent = "Logg inn for å se dine samtaler";
+    visSkjema("skjema-login");
+  });
+  document.getElementById("glemt-btn").addEventListener("click", async () => {
+    const epost = document.getElementById("glemt-epost").value.trim();
+    if (!epost) { visFeil("Fyll inn e-postadressen din."); return; }
+    const btn = document.getElementById("glemt-btn");
+    settLaster(btn, "Sender...", true);
+    const { error } = await sb.auth.resetPasswordForEmail(epost, {
+      redirectTo: "https://ai-chat-backend-6.onrender.com/dashboard"
+    });
+    settLaster(btn, "", false);
+    if (error) { visFeil("Kunne ikke sende e-post. Sjekk adressen og prøv igjen."); }
+    else { visOK("✅ Sjekk e-posten din – vi har sendt en lenke for å tilbakestille passordet."); }
+  });
+
+  // ── OPPRETT KONTO ────────────────────────────────────────────────────────────
+  document.getElementById("vis-registrer").addEventListener("click", () => {
+    document.getElementById("auth-sub").textContent = "Opprett ny konto";
+    visSkjema("skjema-registrer");
+  });
+  document.getElementById("vis-login-fra-reg").addEventListener("click", () => {
+    document.getElementById("auth-sub").textContent = "Logg inn for å se dine samtaler";
+    visSkjema("skjema-login");
+  });
+  document.getElementById("reg-btn").addEventListener("click", async () => {
+    const epost    = document.getElementById("reg-epost").value.trim();
+    const passord  = document.getElementById("reg-passord").value;
+    const passord2 = document.getElementById("reg-passord2").value;
+    if (!epost || !passord) { visFeil("Fyll inn e-post og passord."); return; }
+    if (passord.length < 8) { visFeil("Passordet må være minst 8 tegn."); return; }
+    if (passord !== passord2) { visFeil("Passordene er ikke like."); return; }
+    const btn = document.getElementById("reg-btn");
+    settLaster(btn, "Oppretter konto...", true);
+    const { error } = await sb.auth.signUp({ email: epost, password: passord });
+    settLaster(btn, "", false);
+    if (error) { visFeil(error.message); }
+    else { visOK("✅ Konto opprettet! Sjekk e-posten din for å bekrefte kontoen din."); }
+  });
+
+  // ── SETT NYTT PASSORD ────────────────────────────────────────────────────────
+  document.getElementById("nytt-passord-btn").addEventListener("click", async () => {
+    const passord  = document.getElementById("nytt-passord").value;
+    const passord2 = document.getElementById("nytt-passord2").value;
+    if (passord.length < 8) { visFeil("Passordet må være minst 8 tegn."); return; }
+    if (passord !== passord2) { visFeil("Passordene er ikke like."); return; }
+    const btn = document.getElementById("nytt-passord-btn");
+    settLaster(btn, "Lagrer...", true);
+    const { error } = await sb.auth.updateUser({ password: passord });
+    settLaster(btn, "", false);
+    if (error) { visFeil("Kunne ikke oppdatere passordet: " + error.message); }
+    else { visOK("✅ Nytt passord lagret! Logger inn..."); setTimeout(() => sb.auth.getSession().then(({data}) => { if(data.session) visDashboard(data.session.user); }), 1500); }
+  });
+
+  // ── LOGG UT ───────────────────────────────────────────────────────────────────
   document.getElementById("logout-btn").addEventListener("click", () => sb.auth.signOut());
-  passordInput.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
 
   // ── LAST DATA ────────────────────────────────────────────────────────────────
   async function visDashboard(user) {
