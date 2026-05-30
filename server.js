@@ -63,6 +63,8 @@ Retningslinjer:
 - Var varm og imotekommende - bruk kundens navn hvis du kjenner det.
 - Hvis sporsmalet ikke er relevant for ${config.bransje}, avvis hoflig og hold deg til temaet.
 - Svar alltid fra informasjonen nedenfor. Hvis du ikke vet svaret, be kunden ringe eller sende e-post.
+- Hvis du ikke kjenner kundens navn og samtalen er i gang (ikke første melding), kan du spørre høflig og naturlig om navnet EN gang. Eksempel: "Forresten, hva heter du?" eller "Hyggelig! Hva er navnet ditt?". Gjør det kun hvis det føles naturlig, ikke som et skjema.
+- Når kunden oppgir navnet sitt, bruk det i svaret og husk det resten av samtalen.
 - Du KAN vise ledige tider - disse hentes automatisk fra kalenderen og vises under svaret ditt.
 - Du KAN IKKE bekrefte, reservere eller booke tider direkte - kunden klikker pa en ledig tid.
 
@@ -508,6 +510,19 @@ app.post("/chat", corsPublic, rateLimit, async (req, res) => {
     const hasBookTag = rawReply.includes("[BOOK]");
     const reply      = rawReply.replace(/\[BOOK\]/g, "").trim();
 
+    // Prøv å detektere om kunden oppga navnet sitt i denne meldingen
+    // ved å sjekke om history er kort (tidlig i samtalen) og meldingen er kort
+    let detektertNavn = null;
+    if (!safeName && message.trim().split(" ").length <= 4 && message.trim().length <= 40) {
+      // Enkel heuristikk: kort melding uten spørsmålstegn = sannsynlig navn
+      const ingenSpm = !message.includes("?") && !message.includes("!");
+      const ingenKw  = !["er", "har", "kan", "vil", "hva", "når", "hvor", "how", "what", "when"].some(w => message.toLowerCase().startsWith(w));
+      if (ingenSpm && ingenKw) {
+        // Normaliser: stor forbokstav, trim
+        detektertNavn = message.trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      }
+    }
+
     // Hent dag og klokkeslett fra BRUKERENS melding (ikke AI-svaret)
     // slik at "torsdag 12:00" gir riktig filtrering
     let ledigeTider = null;
@@ -537,7 +552,7 @@ app.post("/chat", corsPublic, rateLimit, async (req, res) => {
       sendBookingVarsel({ navn: safeName, melding: message }).catch(() => {});
     }
 
-    return res.json({ reply, bookingUrl, ledigeTider });
+    return res.json({ reply, bookingUrl, ledigeTider, detektertNavn });
 
   } catch (error) {
     console.error("[FEIL] Nettverksfeil mot OpenAI:", error.message);
