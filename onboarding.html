@@ -312,6 +312,35 @@
       </div>
     </div>
 
+    <!-- Bilder -->
+    <div style="margin-top:28px;">
+      <div class="felt-label" style="margin-bottom:6px;">Bilder <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;">Lim inn URL til bilder du vil bruke på nettsiden. Du kan bruke gratis bilder fra <a href="https://unsplash.com" target="_blank" style="color:var(--gold);">unsplash.com</a>.</div>
+      <div class="felt-grid">
+        <div class="felt-gruppe">
+          <label class="felt-label">Forsidebilde (hero)</label>
+          <input class="felt-input" id="bilde-hero" placeholder="https://images.unsplash.com/..." />
+          <span class="felt-hint">Stort bilde på forsiden</span>
+        </div>
+        <div class="felt-gruppe">
+          <label class="felt-label">Om oss-bilde</label>
+          <input class="felt-input" id="bilde-om" placeholder="https://images.unsplash.com/..." />
+          <span class="felt-hint">Bilde i "Om oss"-seksjonen</span>
+        </div>
+      </div>
+      <!-- Forhåndsvisning -->
+      <div id="bilde-preview" style="display:none;margin-top:12px;display:flex;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-3);margin-bottom:4px;">Forsidebilde</div>
+          <img id="preview-hero" src="" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--cream-3);" />
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-3);margin-bottom:4px;">Om oss-bilde</div>
+          <img id="preview-om" src="" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--cream-3);" />
+        </div>
+      </div>
+    </div>
+
     <div class="felt-gruppe" style="margin-top:24px;">
       <label class="felt-label">Tone / Personlighet</label>
       <select class="felt-select" id="tone">
@@ -561,6 +590,14 @@
     if (e.target.id === "bedrift") {
       document.getElementById("preview-navn").textContent = e.target.value || "salongen";
     }
+    if (e.target.id === "bilde-hero") {
+      const img = document.getElementById("preview-hero");
+      if (img && e.target.value) { img.src = e.target.value; document.getElementById("bilde-preview").style.display = "flex"; }
+    }
+    if (e.target.id === "bilde-om") {
+      const img = document.getElementById("preview-om");
+      if (img && e.target.value) { img.src = e.target.value; document.getElementById("bilde-preview").style.display = "flex"; }
+    }
   });
 
   // ── CAL.COM URL-SJEKK ────────────────────────────────────────────────────────
@@ -712,6 +749,8 @@
       kunder:       document.getElementById("kunder").value.trim(),
       produkter:    document.getElementById("produkter").value.trim(),
       usp:          uspListe.filter(u => u.trim()),
+      bildeHero:    document.getElementById("bilde-hero")?.value?.trim() || "",
+      bildeOm:      document.getElementById("bilde-om")?.value?.trim()   || "",
       tjenester:    tjenester.filter(t => t.navn).map(t => t.navn),
       priser:       tjenester.filter(t => t.navn).map(t => `${t.navn}: ${t.pris}`),
       apningstider,
