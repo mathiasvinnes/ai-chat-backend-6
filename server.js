@@ -451,25 +451,32 @@ app.get("/cal-lookup", corsPublic, async (req, res) => {
   if (!apiKey) return res.json({ ok: false, feil: "Ingen Cal.com API-nøkkel på serveren." });
 
   try {
-    // Hent brukerinfo
-    const meRes  = await fetch("https://api.cal.eu/v2/users/me", {
+    // Bruk samme API-kall som hentLedigeTider – dette vet vi fungerer
+    const meRes = await fetch("https://api.cal.eu/v2/me", {
       headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" }
     });
     const meData = await meRes.json();
-    console.log("[CAL-LOOKUP] /me status:", meRes.status, "data:", JSON.stringify(meData).slice(0, 200));
+    console.log("[CAL-LOOKUP] /me status:", meRes.status);
 
-    // Hent event types med brukerens URI
-    const meUri = meData.data?.id ? `https://api.cal.eu/v2/users/${meData.data.id}/event-types` : null;
-    const etUrl = `https://api.cal.eu/v2/event-types?limit=20`;
-    const etRes = await fetch(etUrl, {
-      headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" }
-    });
+    const userUri = meData.data?.id
+      ? `user=${encodeURIComponent("https://api.cal.eu/v2/users/" + meData.data.id)}`
+      : "";
+
+    // Hent event types – samme som hentLedigeTider gjør
+    const etRes = await fetch(
+      `https://api.cal.eu/v2/event-types?limit=20`,
+      { headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" } }
+    );
     const etData = await etRes.json();
-    console.log("[CAL-LOOKUP] event-types status:", etRes.status, "antall:", etData.data?.length, "slugs:", JSON.stringify(etData.data?.map(e => e.slug)));
+    console.log("[CAL-LOOKUP] event-types status:", etRes.status, JSON.stringify(etData).slice(0, 300));
 
-    const liste = etData.data || [];
+    const liste = Array.isArray(etData.data) ? etData.data
+      : Array.isArray(etData.data?.eventTypeGroups?.[0]?.eventTypes)
+        ? etData.data.eventTypeGroups[0].eventTypes
+        : [];
 
-    // Finn match på slug
+    console.log("[CAL-LOOKUP] slugs funnet:", liste.map(e => e.slug));
+
     const dekodetSlug = decodeURIComponent(slug).toLowerCase();
     const match = liste.find(e =>
       e.slug?.toLowerCase() === dekodetSlug ||
@@ -480,7 +487,12 @@ app.get("/cal-lookup", corsPublic, async (req, res) => {
       return res.json({ ok: true, id: String(match.id), navn: match.title || slug, varighet: match.length || 30 });
     }
 
-    return res.json({ ok: false, feil: `Fant ikke event type med slug "${slug}". Tilgjengelige: ${liste.map(e=>e.slug).join(", ")}` });
+    return res.json({
+      ok: false,
+      feil: liste.length
+        ? `Fant ikke "${slug}". Tilgjengelige: ${liste.map(e => e.slug).join(", ")}`
+        : "Ingen event types funnet – sjekk at Cal.com-kontoen er aktiv."
+    });
   } catch (err) {
     console.error("[CAL-LOOKUP] Feil:", err.message);
     return res.json({ ok: false, feil: "Serverfeil: " + err.message });
