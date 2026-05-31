@@ -438,6 +438,10 @@ app.get("/chat", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "chat.html"));
 });
 
+app.get("/kom-igang", corsPublic, (_req, res) => {
+  res.sendFile(path.join(__dirname, "onboarding.html"));
+});
+
 app.get("/widget.js", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "widget.js"));
 });
@@ -644,6 +648,132 @@ app.delete("/slett-samtale", corsPrivat, async (req, res) => {
   } catch (err) {
     console.error("[FEIL] slett-samtale:", err.message);
     return res.status(500).json({ error: "Serverfeil. Prøv igjen." });
+  }
+});
+
+// ── /provision – oppretter ny salong-instans på Render ───────────────────────
+app.post("/provision", corsPrivat, async (req, res) => {
+  const { konfig, apiKeys } = req.body;
+  if (!konfig?.bedrift || !apiKeys?.openaiKey || !apiKeys?.calKey) {
+    return res.status(400).json({ ok: false, feil: "Mangler nødvendig informasjon." });
+  }
+
+  const RENDER_API_KEY = process.env.RENDER_API_KEY;
+  if (!RENDER_API_KEY) {
+    return res.status(500).json({ ok: false, feil: "RENDER_API_KEY er ikke satt på serveren." });
+  }
+
+  try {
+    // 1. Lag et URL-vennlig navn for tjenesten
+    const tjenestenavn = "ai-salong-" + konfig.bedrift
+      .toLowerCase()
+      .replace(/[æ]/g, "ae").replace(/[ø]/g, "o").replace(/[å]/g, "a")
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .slice(0, 40);
+
+    // 2. Bygg config.json-innhold
+    const configJson = {
+      bedrift:      konfig.bedrift,
+      bransje:      konfig.bransje || "frisørsalong",
+      tone:         konfig.tone || "vennlig og profesjonell",
+      sprakOgLand:  "norsk",
+      adresse:      konfig.adresse,
+      telefon:      konfig.telefon,
+      epost:        konfig.epost,
+      bookinglink:  konfig.bookinglink,
+      tjenester:    konfig.tjenester || [],
+      priser:       konfig.priser || [],
+      apningstider: konfig.apningstider || {},
+      farge:        konfig.farge || "#b8924a",
+      faq: {
+        drop_in:       "Vi tar imot drop-in hvis det er ledig kapasitet, men vi anbefaler å booke time.",
+        avbestilling:  "Avbestilling må skje senest 24 timer før timen.",
+        betaling:      "Vi tar imot kort og Vipps.",
+        allergitest:   "Vi anbefaler allergitest 48 timer før farging.",
+        garanti:       "Er du ikke fornøyd? Kom tilbake innen 7 dager, så fikser vi det gratis."
+      }
+    };
+
+    if (konfig.ekstraInfo) configJson.ekstraInfo = konfig.ekstraInfo;
+
+    // 3. Opprett Render-tjenesten via API
+    const renderRes = await fetch("https://api.render.com/v1/services", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RENDER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "web_service",
+        name: tjenestenavn,
+        ownerId: process.env.RENDER_OWNER_ID,
+        repo: process.env.RENDER_REPO_URL,
+        branch: "main",
+        buildCommand: "npm install",
+        startCommand: "node server.js",
+        plan: "free",
+        envVars: [
+          { key: "OPENAI_API_KEY",    value: apiKeys.openaiKey },
+          { key: "CAL_API_KEY",       value: apiKeys.calKey },
+          { key: "CAL_EVENT_TYPE_ID", value: konfig.calEventId },
+          { key: "SUPABASE_URL",      value: process.env.SUPABASE_URL || "" },
+          { key: "SUPABASE_KEY",      value: process.env.SUPABASE_KEY || "" },
+          { key: "SENDGRID_KEY",      value: process.env.SENDGRID_KEY || "" },
+          { key: "CONFIG_JSON",       value: JSON.stringify(configJson) }
+        ]
+      })
+    });
+
+    const renderData = await renderRes.json();
+
+    if (!renderRes.ok) {
+      console.error("[PROVISION] Render feil:", JSON.stringify(renderData));
+      return res.status(502).json({ ok: false, feil: "Render API-feil: " + (renderData.message || "Ukjent") });
+    }
+
+    const serviceId  = renderData.service?.id;
+    const serviceUrl = renderData.service?.serviceDetails?.url
+      || `https://${tjenestenavn}.onrender.com`;
+
+    console.log(`[PROVISION] Ny salong opprettet: ${konfig.bedrift} → ${serviceUrl}`);
+
+    // 4. Send velkomstepost via SendGrid
+    if (process.env.SENDGRID_KEY) {
+      await fetch("https://api.sendgrid.com/v3/mail/send", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.SENDGRID_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: konfig.epost }] }],
+          from: { email: "mathias.s.vinnes@gmail.com", name: "AI-Salong" },
+          subject: `🎉 ${konfig.bedrift} er klar – her er dine detaljer`,
+          content: [{
+            type: "text/html",
+            value: `
+              <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f0e8;border-radius:12px;">
+                <h1 style="font-size:28px;margin-bottom:8px;">Velkommen, ${escapeHtml(konfig.bedrift)}! 🎉</h1>
+                <p style="color:#666;margin-bottom:24px;">Din AI-assistent, nettside og dashboard er klare.</p>
+                <div style="background:#fff;border-radius:8px;padding:20px;margin-bottom:20px;">
+                  <p><strong>🌐 Nettside:</strong> <a href="${serviceUrl}">${serviceUrl}</a></p>
+                  <p><strong>💬 Chat:</strong> <a href="${serviceUrl}/chat">${serviceUrl}/chat</a></p>
+                  <p><strong>📊 Dashboard:</strong> <a href="${serviceUrl}/dashboard">${serviceUrl}/dashboard</a></p>
+                </div>
+                <p style="font-size:13px;color:#999;">Det kan ta 2–3 minutter før nettsiden er oppe første gang.</p>
+              </div>
+            `
+          }]
+        })
+      }).catch(err => console.error("[PROVISION] E-post feil:", err.message));
+    }
+
+    return res.json({ ok: true, url: serviceUrl, serviceId });
+
+  } catch (err) {
+    console.error("[PROVISION] Feil:", err.message);
+    return res.status(500).json({ ok: false, feil: err.message });
   }
 });
 
