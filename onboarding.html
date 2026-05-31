@@ -315,28 +315,43 @@
     <!-- Bilder -->
     <div style="margin-top:28px;">
       <div class="felt-label" style="margin-bottom:6px;">Bilder <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></div>
-      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;">Lim inn URL til bilder du vil bruke på nettsiden. Du kan bruke gratis bilder fra <a href="https://unsplash.com" target="_blank" style="color:var(--gold);">unsplash.com</a>.</div>
-      <div class="felt-grid">
-        <div class="felt-gruppe">
-          <label class="felt-label">Forsidebilde (hero)</label>
-          <input class="felt-input" id="bilde-hero" placeholder="https://images.unsplash.com/..." />
-          <span class="felt-hint">Stort bilde på forsiden</span>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;">Velg et bilde fra galleriet under, eller lim inn en egen URL.</div>
+
+      <!-- Forsidebilde -->
+      <div style="margin-bottom:20px;">
+        <div class="felt-label" style="margin-bottom:8px;">Forsidebilde</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">
+          <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:border 0.2s;" title="Frisørsalong 1" />
+          <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Salong interiør" />
+          <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Frisør i arbeid" />
+          <img src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Moderne salong" />
+          <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Hårklipp" />
+          <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Frisør mann" />
+          <img src="https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Elegant salong" />
+          <img src="https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Hårfarge" />
         </div>
-        <div class="felt-gruppe">
-          <label class="felt-label">Om oss-bilde</label>
-          <input class="felt-input" id="bilde-om" placeholder="https://images.unsplash.com/..." />
-          <span class="felt-hint">Bilde i "Om oss"-seksjonen</span>
+        <input class="felt-input" id="bilde-hero" placeholder="...eller lim inn en egen URL" style="margin:0;" oninput="oppdaterBildePreview('hero',this.value)" />
+        <div style="margin-top:6px;border-radius:8px;overflow:hidden;height:80px;background:var(--cream-2);">
+          <img id="preview-hero" src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=600&q=70" style="width:100%;height:80px;object-fit:cover;" />
         </div>
       </div>
-      <!-- Forhåndsvisning -->
-      <div id="bilde-preview" style="display:none;margin-top:12px;display:flex;gap:12px;">
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink-3);margin-bottom:4px;">Forsidebilde</div>
-          <img id="preview-hero" src="" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--cream-3);" />
+
+      <!-- Om oss-bilde -->
+      <div>
+        <div class="felt-label" style="margin-bottom:8px;">Om oss-bilde</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">
+          <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Salong interiør" />
+          <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Frisørsalong" />
+          <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Hårklipp" />
+          <img src="https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Elegant" />
+          <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Frisør" />
+          <img src="https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Hårfarge" />
+          <img src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Moderne" />
+          <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Mann klipp" />
         </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink-3);margin-bottom:4px;">Om oss-bilde</div>
-          <img id="preview-om" src="" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--cream-3);" />
+        <input class="felt-input" id="bilde-om" placeholder="...eller lim inn en egen URL" style="margin:0;" oninput="oppdaterBildePreview('om',this.value)" />
+        <div style="margin-top:6px;border-radius:8px;overflow:hidden;height:80px;background:var(--cream-2);">
+          <img id="preview-om" src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=70" style="width:100%;height:80px;object-fit:cover;" />
         </div>
       </div>
     </div>
@@ -585,18 +600,31 @@
     document.getElementById("preview-chat").style.background = valgtBakgrunn;
   }
 
+  // Sett standardbilder
+  document.getElementById("bilde-hero").value = "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80";
+  document.getElementById("bilde-om").value   = "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=700&q=80";
+
+  function velgBilde(el, felt) {
+    // Marker valgt bilde
+    document.querySelectorAll(`.bilde-valg[data-felt="${felt}"]`).forEach(b => b.style.borderColor = "transparent");
+    el.style.borderColor = "var(--gold)";
+    // Sett URL og oppdater preview
+    const src = el.src.replace("w=300&q=70", "w=800&q=80");
+    document.getElementById("bilde-" + felt).value = src;
+    document.getElementById("preview-" + felt).src  = src;
+  }
+
+  function oppdaterBildePreview(felt, url) {
+    if (url) {
+      document.getElementById("preview-" + felt).src = url;
+      document.querySelectorAll(`.bilde-valg[data-felt="${felt}"]`).forEach(b => b.style.borderColor = "transparent");
+    }
+  }
+
   // Preview oppdateres live
   document.addEventListener("input", e => {
     if (e.target.id === "bedrift") {
       document.getElementById("preview-navn").textContent = e.target.value || "salongen";
-    }
-    if (e.target.id === "bilde-hero") {
-      const img = document.getElementById("preview-hero");
-      if (img && e.target.value) { img.src = e.target.value; document.getElementById("bilde-preview").style.display = "flex"; }
-    }
-    if (e.target.id === "bilde-om") {
-      const img = document.getElementById("preview-om");
-      if (img && e.target.value) { img.src = e.target.value; document.getElementById("bilde-preview").style.display = "flex"; }
     }
   });
 
