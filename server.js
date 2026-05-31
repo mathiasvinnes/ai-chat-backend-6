@@ -747,32 +747,38 @@ app.post("/provision", corsPrivat, async (req, res) => {
       console.log("[PROVISION] Hentet ownerId automatisk:", ownerId);
     }
 
-    // 4. Opprett Render-tjenesten via API
+    // 4. Opprett Render-tjenesten via API med korrekt format
     const renderRes = await fetch("https://api.render.com/v1/services", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RENDER_API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "application/json"
       },
       body: JSON.stringify({
         type: "web_service",
         name: tjenestenavn,
         ownerId: ownerId,
         repo: process.env.RENDER_REPO_URL,
+        autoDeploy: "yes",
         branch: "main",
-        buildCommand: "npm install",
-        startCommand: "node server.js",
-        plan: "free",
         envVars: [
-          // Bruker serverens egne nøkler – kunden trenger ikke sette opp noe
           { key: "OPENAI_API_KEY",    value: process.env.OPENAI_API_KEY || "" },
           { key: "CAL_API_KEY",       value: process.env.CAL_API_KEY    || "" },
-          { key: "CAL_EVENT_TYPE_ID", value: konfig.calEventId },
+          { key: "CAL_EVENT_TYPE_ID", value: String(konfig.calEventId || "") },
           { key: "SUPABASE_URL",      value: process.env.SUPABASE_URL   || "" },
           { key: "SUPABASE_KEY",      value: process.env.SUPABASE_KEY   || "" },
           { key: "SENDGRID_KEY",      value: process.env.SENDGRID_KEY   || "" },
           { key: "CONFIG_JSON",       value: JSON.stringify(configJson) }
-        ]
+        ],
+        serviceDetails: {
+          plan: "free",
+          runtime: "node",
+          buildCommand: "npm install",
+          startCommand: "node server.js",
+          region: "frankfurt",
+          numInstances: 1
+        }
       })
     });
 
