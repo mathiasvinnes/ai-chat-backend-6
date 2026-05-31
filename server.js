@@ -697,7 +697,23 @@ app.post("/provision", corsPrivat, async (req, res) => {
 
     if (konfig.ekstraInfo) configJson.ekstraInfo = konfig.ekstraInfo;
 
-    // 3. Opprett Render-tjenesten via API
+    // 3. Hent owner ID automatisk fra eksisterende service
+    let ownerId = process.env.RENDER_OWNER_ID;
+    if (!ownerId) {
+      const EXISTING_SERVICE_ID = "srv-d7d8plnlk1mc73ek6ldg";
+      const ownerRes = await fetch(`https://api.render.com/v1/services/${EXISTING_SERVICE_ID}`, {
+        headers: { "Authorization": `Bearer ${RENDER_API_KEY}` }
+      });
+      const ownerData = await ownerRes.json();
+      ownerId = ownerData.ownerId || ownerData.owner?.id;
+      if (!ownerId) {
+        console.error("[PROVISION] Kunne ikke hente ownerId:", JSON.stringify(ownerData));
+        return res.status(500).json({ ok: false, feil: "Kunne ikke hente Render owner ID." });
+      }
+      console.log("[PROVISION] Hentet ownerId automatisk:", ownerId);
+    }
+
+    // 4. Opprett Render-tjenesten via API
     const renderRes = await fetch("https://api.render.com/v1/services", {
       method: "POST",
       headers: {
@@ -707,7 +723,7 @@ app.post("/provision", corsPrivat, async (req, res) => {
       body: JSON.stringify({
         type: "web_service",
         name: tjenestenavn,
-        ownerId: process.env.RENDER_OWNER_ID,
+        ownerId: ownerId,
         repo: process.env.RENDER_REPO_URL,
         branch: "main",
         buildCommand: "npm install",
