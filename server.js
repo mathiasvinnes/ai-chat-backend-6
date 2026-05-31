@@ -451,31 +451,36 @@ app.get("/cal-lookup", corsPublic, async (req, res) => {
   if (!apiKey) return res.json({ ok: false, feil: "Ingen Cal.com API-nøkkel på serveren." });
 
   try {
-    // Hent alle event types og finn riktig slug
+    // Hent brukerinfo
     const meRes  = await fetch("https://api.cal.eu/v2/users/me", {
       headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" }
     });
     const meData = await meRes.json();
-    const userUri = meData.data?.username || username;
+    console.log("[CAL-LOOKUP] /me status:", meRes.status, "data:", JSON.stringify(meData).slice(0, 200));
 
-    const etRes  = await fetch(`https://api.cal.eu/v2/event-types?username=${encodeURIComponent(userUri)}&limit=20`, {
+    // Hent event types med brukerens URI
+    const meUri = meData.data?.id ? `https://api.cal.eu/v2/users/${meData.data.id}/event-types` : null;
+    const etUrl = `https://api.cal.eu/v2/event-types?limit=20`;
+    const etRes = await fetch(etUrl, {
       headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" }
     });
     const etData = await etRes.json();
-    const liste  = etData.data || [];
+    console.log("[CAL-LOOKUP] event-types status:", etRes.status, "antall:", etData.data?.length, "slugs:", JSON.stringify(etData.data?.map(e => e.slug)));
 
-    // Finn event type som matcher slug
+    const liste = etData.data || [];
+
+    // Finn match på slug
+    const dekodetSlug = decodeURIComponent(slug).toLowerCase();
     const match = liste.find(e =>
-      e.slug === slug ||
-      e.slug === slug.toLowerCase() ||
-      e.title?.toLowerCase() === slug.toLowerCase()
-    ) || liste[0]; // fallback til første
+      e.slug?.toLowerCase() === dekodetSlug ||
+      e.title?.toLowerCase() === dekodetSlug
+    ) || liste[0];
 
     if (match?.id) {
       return res.json({ ok: true, id: String(match.id), navn: match.title || slug, varighet: match.length || 30 });
     }
 
-    return res.json({ ok: false, feil: "Fant ikke event type. Sjekk at URL-en er riktig og at event type er aktiv." });
+    return res.json({ ok: false, feil: `Fant ikke event type med slug "${slug}". Tilgjengelige: ${liste.map(e=>e.slug).join(", ")}` });
   } catch (err) {
     console.error("[CAL-LOOKUP] Feil:", err.message);
     return res.json({ ok: false, feil: "Serverfeil: " + err.message });
