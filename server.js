@@ -442,6 +442,40 @@ app.get("/kom-igang", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "onboarding.html"));
 });
 
+// Cal.com event type lookup – brukes av onboarding-skjemaet
+app.get("/cal-lookup", corsPublic, async (req, res) => {
+  const { username, slug } = req.query;
+  if (!username || !slug) return res.status(400).json({ ok: false, feil: "Mangler username eller slug." });
+
+  // Prøv cal.eu og cal.com
+  for (const base of ["https://api.cal.eu/v2", "https://api.cal.com/v2"]) {
+    try {
+      const r = await fetch(
+        `${base}/event-types/` + encodeURIComponent(username) + "/" + encodeURIComponent(slug),
+        { headers: { "cal-api-version": "2024-08-13" } }
+      );
+      if (!r.ok) continue;
+      const data = await r.json();
+      const et = data.data;
+      if (et?.id) {
+        return res.json({ ok: true, id: String(et.id), navn: et.title || slug, varighet: et.length || 30 });
+      }
+    } catch (_) {}
+  }
+
+  // Fallback: prøv public Cal.com API
+  try {
+    const r = await fetch(`https://cal.com/api/trpc/public/event?input=${encodeURIComponent(JSON.stringify({ username, eventSlug: slug }))}`);
+    const data = await r.json();
+    const et = data?.result?.data;
+    if (et?.id) {
+      return res.json({ ok: true, id: String(et.id), navn: et.title || slug, varighet: et.length || 30 });
+    }
+  } catch (_) {}
+
+  return res.json({ ok: false, feil: "Fant ikke event type. Sjekk at URL-en er riktig og at event type er aktiv." });
+});
+
 app.get("/widget.js", corsPublic, (_req, res) => {
   res.sendFile(path.join(__dirname, "widget.js"));
 });
