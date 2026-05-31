@@ -166,6 +166,23 @@
         <textarea class="felt-textarea" id="beskrivelse" placeholder="f.eks. Eksklusiv frisørsalong i hjertet av Oslo – vi kombinerer håndverk med lidenskap."></textarea>
       </div>
       <div class="felt-gruppe">
+        <label class="felt-label">År med erfaring <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></label>
+        <input class="felt-input" id="erfaringAar" placeholder="f.eks. 12+" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Antall ansatte <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></label>
+        <input class="felt-input" id="ansatte" placeholder="f.eks. 5" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Antall fornøyde kunder <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></label>
+        <input class="felt-input" id="kunder" placeholder="f.eks. 2000+" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Produkter dere bruker <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></label>
+        <input class="felt-input" id="produkter" placeholder="f.eks. Wella og Redken" />
+        <span class="felt-hint">La stå tom hvis du ikke vil vise dette på nettsiden</span>
+      </div>
+      <div class="felt-gruppe">
         <label class="felt-label">Adresse *</label>
         <input class="felt-input" id="adresse" placeholder="Storgata 12, 0182 Oslo" />
       </div>
@@ -218,6 +235,12 @@
     <div class="kort-sub">Legg til tjenestene du tilbyr. AI-assistenten bruker dette til å svare på spørsmål om priser.</div>
     <div id="tjenester-liste" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>
     <button class="knapp-sek" onclick="leggTilTjeneste()" style="width:100%;">+ Legg til tjeneste</button>
+    <div style="margin-top:28px;">
+      <div class="felt-label" style="margin-bottom:6px;">Hvorfor velge dere? <span style="color:var(--ink-3);font-weight:400;">(valgfri)</span></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px;">Disse vises på nettsiden og hjelper kunder å forstå hva som gjør dere unike.</div>
+      <div id="usp-liste" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+      <button class="knapp-sek" onclick="leggTilUsp()" style="font-size:13px;padding:8px 16px;">+ Legg til et argument</button>
+    </div>
     <div class="felt-gruppe full" style="margin-top:24px;">
       <label class="felt-label">Ekstra info til AI-assistenten (valgfri)</label>
       <textarea class="felt-textarea" id="ekstra-info" placeholder="f.eks. Vi anbefaler allergitest 48t før første farging. Vi tar imot drop-in hvis det er ledig kapasitet..."></textarea>
@@ -422,14 +445,74 @@
   function leggTilTjeneste() {
     tjenester.push({ navn: "", pris: "" });
     byggTjenester();
+
+  // ── USP (unique selling points) ───────────────────────────────────────────────
+  let uspListe = [
+    "Sertifiserte frisører med min. 3 års erfaring",
+    "AI-drevet booking – tilgjengelig 24/7"
+  ];
+
+  function byggUsp() {
+    document.getElementById("usp-liste").innerHTML = uspListe.map((u, i) => `
+      <div style="display:grid;grid-template-columns:1fr 36px;gap:8px;align-items:center;">
+        <input class="felt-input" value="${u}" oninput="uspListe[${i}]=this.value" placeholder="f.eks. Fornøyd-garanti innen 7 dager" style="margin:0;" />
+        <button onclick="fjernUsp(${i})" style="background:none;border:1px solid var(--cream-3);border-radius:6px;cursor:pointer;padding:6px;color:var(--ink-3);">✕</button>
+      </div>
+    `).join("");
+  }
+
+  function leggTilUsp() { uspListe.push(""); byggUsp(); }
+  function fjernUsp(i)  { uspListe.splice(i, 1); byggUsp(); }
+
+  byggUsp();
   }
 
   function fjernTjeneste(i) {
     tjenester.splice(i, 1);
     byggTjenester();
+
+  // ── USP (unique selling points) ───────────────────────────────────────────────
+  let uspListe = [
+    "Sertifiserte frisører med min. 3 års erfaring",
+    "AI-drevet booking – tilgjengelig 24/7"
+  ];
+
+  function byggUsp() {
+    document.getElementById("usp-liste").innerHTML = uspListe.map((u, i) => `
+      <div style="display:grid;grid-template-columns:1fr 36px;gap:8px;align-items:center;">
+        <input class="felt-input" value="${u}" oninput="uspListe[${i}]=this.value" placeholder="f.eks. Fornøyd-garanti innen 7 dager" style="margin:0;" />
+        <button onclick="fjernUsp(${i})" style="background:none;border:1px solid var(--cream-3);border-radius:6px;cursor:pointer;padding:6px;color:var(--ink-3);">✕</button>
+      </div>
+    `).join("");
+  }
+
+  function leggTilUsp() { uspListe.push(""); byggUsp(); }
+  function fjernUsp(i)  { uspListe.splice(i, 1); byggUsp(); }
+
+  byggUsp();
   }
 
   byggTjenester();
+
+  // ── USP (unique selling points) ───────────────────────────────────────────────
+  let uspListe = [
+    "Sertifiserte frisører med min. 3 års erfaring",
+    "AI-drevet booking – tilgjengelig 24/7"
+  ];
+
+  function byggUsp() {
+    document.getElementById("usp-liste").innerHTML = uspListe.map((u, i) => `
+      <div style="display:grid;grid-template-columns:1fr 36px;gap:8px;align-items:center;">
+        <input class="felt-input" value="${u}" oninput="uspListe[${i}]=this.value" placeholder="f.eks. Fornøyd-garanti innen 7 dager" style="margin:0;" />
+        <button onclick="fjernUsp(${i})" style="background:none;border:1px solid var(--cream-3);border-radius:6px;cursor:pointer;padding:6px;color:var(--ink-3);">✕</button>
+      </div>
+    `).join("");
+  }
+
+  function leggTilUsp() { uspListe.push(""); byggUsp(); }
+  function fjernUsp(i)  { uspListe.splice(i, 1); byggUsp(); }
+
+  byggUsp();
 
   // ── FARGE ────────────────────────────────────────────────────────────────────
   let valgtFarge      = "#b8924a";
@@ -623,6 +706,12 @@
       sprakOgLand:  "norsk",
       farge:        valgtFarge,
       bakgrunn:     valgtBakgrunn,
+      beskrivelse:  document.getElementById("beskrivelse").value.trim(),
+      erfaringAar:  document.getElementById("erfaringAar").value.trim(),
+      ansatte:      document.getElementById("ansatte").value.trim(),
+      kunder:       document.getElementById("kunder").value.trim(),
+      produkter:    document.getElementById("produkter").value.trim(),
+      usp:          uspListe.filter(u => u.trim()),
       tjenester:    tjenester.filter(t => t.navn).map(t => t.navn),
       priser:       tjenester.filter(t => t.navn).map(t => `${t.navn}: ${t.pris}`),
       apningstider,
