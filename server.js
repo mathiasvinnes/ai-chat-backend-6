@@ -447,52 +447,29 @@ app.get("/cal-lookup", corsPublic, async (req, res) => {
   const { username, slug } = req.query;
   if (!username || !slug) return res.status(400).json({ ok: false, feil: "Mangler username eller slug." });
 
-  const apiKey = CAL_API_KEY;
-  if (!apiKey) return res.json({ ok: false, feil: "Ingen Cal.com API-nøkkel på serveren." });
+  const apiKey  = CAL_API_KEY;
+  const eventId = CAL_EVENT_TYPE_ID;
+  if (!apiKey || !eventId) return res.json({ ok: false, feil: "Mangler Cal.com-konfigurasjon." });
 
   try {
-    // Bruk samme API-kall som hentLedigeTider – dette vet vi fungerer
-    const meRes = await fetch("https://api.cal.eu/v2/me", {
+    // Verifiser via slots/available – vi vet dette fungerer
+    const now   = new Date(Date.now() + 5 * 60 * 1000);
+    const slutt = new Date(now);
+    slutt.setDate(slutt.getDate() + 7);
+    const params = new URLSearchParams({
+      eventTypeId: String(eventId),
+      startTime:   now.toISOString(),
+      endTime:     slutt.toISOString(),
+      timeZone:    "Europe/Oslo"
+    });
+    const slotsRes  = await fetch(`${CAL_BASE}/slots/available?${params}`, {
       headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" }
     });
-    const meData = await meRes.json();
-    console.log("[CAL-LOOKUP] /me status:", meRes.status);
-
-    const userUri = meData.data?.id
-      ? `user=${encodeURIComponent("https://api.cal.eu/v2/users/" + meData.data.id)}`
-      : "";
-
-    // Hent event types – samme som hentLedigeTider gjør
-    const etRes = await fetch(
-      `https://api.cal.eu/v2/event-types?limit=20`,
-      { headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" } }
-    );
-    const etData = await etRes.json();
-    console.log("[CAL-LOOKUP] event-types status:", etRes.status, JSON.stringify(etData).slice(0, 300));
-
-    const liste = Array.isArray(etData.data) ? etData.data
-      : Array.isArray(etData.data?.eventTypeGroups?.[0]?.eventTypes)
-        ? etData.data.eventTypeGroups[0].eventTypes
-        : [];
-
-    console.log("[CAL-LOOKUP] slugs funnet:", liste.map(e => e.slug));
-
-    const dekodetSlug = decodeURIComponent(slug).toLowerCase();
-    const match = liste.find(e =>
-      e.slug?.toLowerCase() === dekodetSlug ||
-      e.title?.toLowerCase() === dekodetSlug
-    ) || liste[0];
-
-    if (match?.id) {
-      return res.json({ ok: true, id: String(match.id), navn: match.title || slug, varighet: match.length || 30 });
+    const slotsData = await slotsRes.json();
+    if (slotsData.status === "success") {
+      return res.json({ ok: true, id: String(eventId), navn: decodeURIComponent(slug).replace(/-/g, " "), varighet: 30 });
     }
-
-    return res.json({
-      ok: false,
-      feil: liste.length
-        ? `Fant ikke "${slug}". Tilgjengelige: ${liste.map(e => e.slug).join(", ")}`
-        : "Ingen event types funnet – sjekk at Cal.com-kontoen er aktiv."
-    });
+    return res.json({ ok: false, feil: "Kunne ikke verifisere Cal.com event type. Sjekk URL-en." });
   } catch (err) {
     console.error("[CAL-LOOKUP] Feil:", err.message);
     return res.json({ ok: false, feil: "Serverfeil: " + err.message });
