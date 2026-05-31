@@ -480,7 +480,7 @@
     </div>
   </div>
   <div class="hero-hoyre">
-    <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80" alt="Studio Klipp" class="hero-bilde" />
+    <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80" alt="Studio Klipp" class="hero-bilde" id="hero-bilde" />
     <div class="hero-bilde-overlay"></div>
     <div class="hero-stats">
       <div class="hero-stat">
@@ -502,7 +502,7 @@
 <!-- OM OSS -->
 <section id="om">
   <div class="om-bilde-wrap fade-in">
-    <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=700&q=80" alt="Om Studio Klipp" class="om-bilde" />
+    <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=700&q=80" alt="Om Studio Klipp" class="om-bilde" id="om-bilde" />
     <div class="om-bilde-dekor"></div>
   </div>
   <div>
@@ -706,23 +706,36 @@
   const BASE_URL = "https://ai-chat-backend-6.onrender.com";
   const CHAT_API = BASE_URL + "/chat";
 
-  // Last inn config dynamisk fra serveren – prøver på nytt hvis server sover
-  async function lastConfig(forsok = 0) {
+  // Config er injisert server-side – ingen fetch nødvendig
+  function lastConfig() {
     try {
-      const res = await fetch(BASE_URL + "/api/config");
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const cfg = await res.json();
+      const cfg = window.SALONG_CONFIG || {};
 
       // Navn
       document.querySelectorAll(".bedrift-navn").forEach(el => el.textContent = cfg.bedrift);
       document.title = cfg.bedrift + " – Frisørsalong";
 
-      // Farger
+      // Farger – oppdater alle CSS-variabler
       if (cfg.farge) {
         document.documentElement.style.setProperty("--gold", cfg.farge);
+        document.documentElement.style.setProperty("--gold-light", cfg.farge + "33");
+        // Lag mørkere versjon av primærfargen
+        const mork = cfg.farge.replace(/^#/, "");
+        document.documentElement.style.setProperty("--gold-dark", "#" + mork.replace(/../g, h => Math.max(0, parseInt(h,16)-30).toString(16).padStart(2,"0")));
       }
       if (cfg.bakgrunn) {
         document.documentElement.style.setProperty("--cream", cfg.bakgrunn);
+        document.documentElement.style.setProperty("--cream-2", cfg.bakgrunn + "ee");
+      }
+
+      // Bilder
+      if (cfg.bildeHero) {
+        const heroBilde = document.getElementById("hero-bilde");
+        if (heroBilde) heroBilde.src = cfg.bildeHero;
+      }
+      if (cfg.bildeOm) {
+        const omBilde = document.getElementById("om-bilde");
+        if (omBilde) omBilde.src = cfg.bildeOm;
       }
 
       // Beskrivelse
@@ -797,12 +810,7 @@
       document.querySelectorAll(".chat-bedrift-navn").forEach(el => el.textContent = cfg.bedrift + " AI");
 
     } catch (err) {
-      if (forsok < 5) {
-        console.log(`[Config] Prøver igjen om 3 sek... (forsøk ${forsok + 1})`);
-        setTimeout(() => lastConfig(forsok + 1), 3000);
-      } else {
-        console.error("Kunne ikke laste konfigurasjon:", err);
-      }
+      console.error("Kunne ikke laste konfigurasjon:", err);
     }
   }
 
