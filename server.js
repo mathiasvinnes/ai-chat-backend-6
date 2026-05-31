@@ -688,8 +688,8 @@ app.delete("/slett-samtale", corsPrivat, async (req, res) => {
 // ── /provision – oppretter ny salong-instans på Render ───────────────────────
 app.post("/provision", corsPrivat, async (req, res) => {
   const { konfig, apiKeys } = req.body;
-  if (!konfig?.bedrift || !apiKeys?.openaiKey || !apiKeys?.calKey) {
-    return res.status(400).json({ ok: false, feil: "Mangler nødvendig informasjon." });
+  if (!konfig?.bedrift || !konfig?.epost) {
+    return res.status(400).json({ ok: false, feil: "Mangler salongnavn eller e-post." });
   }
 
   const RENDER_API_KEY = process.env.RENDER_API_KEY;
