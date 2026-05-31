@@ -308,20 +308,15 @@
   <!-- STEG 4: Aktivering -->
   <div id="steg-4" class="kort" style="display:none;">
     <div class="kort-tittel">Aktiver salongen</div>
-    <div class="kort-sub">Vi setter opp alt automatisk – chatbot, nettside og dashboard. Det tar 2–3 minutter.</div>
-
-    <div class="felt-grid">
-      <div class="felt-gruppe full">
-        <label class="felt-label">OpenAI API-nøkkel *</label>
-        <input class="felt-input" id="openai-key" type="password" placeholder="sk-..." />
-        <span class="felt-hint">Hentes fra platform.openai.com → API Keys</span>
-      </div>
-      <div class="felt-gruppe full">
-        <label class="felt-label">Cal.com API-nøkkel *</label>
-        <input class="felt-input" id="cal-key" type="password" placeholder="cal_live_..." />
-        <span class="felt-hint">Hentes fra Cal.com → Settings → Developer → API Keys</span>
-      </div>
+    <div class="kort-sub">
+      Alt er klart! Vi setter opp chatbot, nettside og dashboard automatisk. Det tar 2–3 minutter.
+      <br><br>
+      <span style="display:inline-flex;align-items:center;gap:8px;background:var(--cream-2);border:1px solid var(--cream-3);border-radius:8px;padding:10px 14px;font-size:13px;margin-top:4px;">
+        🔒 <span>Vi bruker sikre API-nøkler på vår side – du trenger ikke sette opp noe selv.</span>
+      </span>
     </div>
+
+
 
     <div class="status-boks" id="status-boks">
       <div class="status-linje" id="status-config">
@@ -592,19 +587,13 @@
         }
       }
     }
-    if (steg === 4) {
-      if (!document.getElementById("openai-key").value.trim()) return false;
-      if (!document.getElementById("cal-key").value.trim()) return false;
-    }
+    // Steg 4 – ingen ekstra validering nødvendig
     return true;
   }
 
   // ── AKTIVER SALONG ────────────────────────────────────────────────────────────
   async function aktiverSalong() {
-    if (!valider(4)) {
-      alert("Fyll inn OpenAI og Cal.com API-nøkler.");
-      return;
-    }
+    if (!valider(4)) return;
 
     const btn = document.getElementById("aktiver-btn");
     btn.disabled = true;
@@ -640,10 +629,7 @@
       ekstraInfo:   document.getElementById("ekstra-info").value.trim(),
     };
 
-    const apiKeys = {
-      openaiKey: document.getElementById("openai-key").value.trim(),
-      calKey:    document.getElementById("cal-key").value.trim(),
-    };
+    const apiKeys = {}; // Bruker serverens egne nøkler
 
     setStatusIkon("config", "laster");
 
