@@ -764,12 +764,13 @@ app.post("/provision", corsPrivat, async (req, res) => {
         startCommand: "node server.js",
         plan: "free",
         envVars: [
-          { key: "OPENAI_API_KEY",    value: apiKeys.openaiKey },
-          { key: "CAL_API_KEY",       value: apiKeys.calKey },
+          // Bruker serverens egne nøkler – kunden trenger ikke sette opp noe
+          { key: "OPENAI_API_KEY",    value: process.env.OPENAI_API_KEY || "" },
+          { key: "CAL_API_KEY",       value: process.env.CAL_API_KEY    || "" },
           { key: "CAL_EVENT_TYPE_ID", value: konfig.calEventId },
-          { key: "SUPABASE_URL",      value: process.env.SUPABASE_URL || "" },
-          { key: "SUPABASE_KEY",      value: process.env.SUPABASE_KEY || "" },
-          { key: "SENDGRID_KEY",      value: process.env.SENDGRID_KEY || "" },
+          { key: "SUPABASE_URL",      value: process.env.SUPABASE_URL   || "" },
+          { key: "SUPABASE_KEY",      value: process.env.SUPABASE_KEY   || "" },
+          { key: "SENDGRID_KEY",      value: process.env.SENDGRID_KEY   || "" },
           { key: "CONFIG_JSON",       value: JSON.stringify(configJson) }
         ]
       })
