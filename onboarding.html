@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kom i gang – AI-frisørassistent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f5f0e8; --cream-2: #ede8df; --cream-3: #e4ddd1;
+      --ink: #1a1510; --ink-2: #3d3530; --ink-3: #7a7060;
+      --gold: #b8924a; --white: #ffffff;
+      --green: #16a34a; --red: #ef4444;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Jost', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+    /* TOPBAR */
+    .topbar { background: var(--ink); padding: 18px 60px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--white); letter-spacing: 0.06em; }
+    .topbar-logo span { color: var(--gold); }
+    .topbar-sub { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    /* STEG-INDIKATOR */
+    .steg-wrap { max-width: 700px; margin: 48px auto 0; padding: 0 24px; }
+    .steg-rad { display: flex; align-items: center; gap: 0; margin-bottom: 48px; }
+    .steg { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+    .steg-sirkel {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      border: 2px solid var(--cream-3); background: var(--white); color: var(--ink-3);
+      transition: all 0.3s; position: relative; z-index: 1;
+    }
+    .steg-sirkel.aktiv { border-color: var(--gold); background: var(--gold); color: var(--white); }
+    .steg-sirkel.ferdig { border-color: var(--green); background: var(--green); color: var(--white); }
+    .steg-tekst { font-size: 11px; font-weight: 500; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
+    .steg-tekst.aktiv { color: var(--gold); }
+    .steg-linje { flex: 1; height: 1px; background: var(--cream-3); margin-top: -20px; }
+    .steg-linje.ferdig { background: var(--green); }
+
+    /* SKJEMA-KORT */
+    .skjema-kort { max-width: 700px; margin: 0 auto 48px; padding: 0 24px; }
+    .kort { background: var(--white); border: 1px solid var(--cream-3); border-radius: 16px; padding: 40px; }
+    .kort-tittel { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; margin-bottom: 8px; }
+    .kort-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 32px; line-height: 1.6; }
+    .felt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .felt-gruppe { display: flex; flex-direction: column; gap: 6px; }
+    .felt-gruppe.full { grid-column: 1 / -1; }
+    .felt-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+    .felt-input, .felt-select, .felt-textarea {
+      border: 1px solid var(--cream-3); border-radius: 8px;
+      padding: 11px 14px; font-family: 'Jost', sans-serif; font-size: 14px;
+      color: var(--ink); background: var(--cream); transition: border-color 0.2s;
+      width: 100%;
+    }
+    .felt-input:focus, .felt-select:focus, .felt-textarea:focus { outline: none; border-color: var(--gold); background: var(--white); }
+    .felt-textarea { resize: vertical; min-height: 90px; }
+    .felt-hint { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+    /* ÅPNINGSTIDER */
+    .apn-grid { display: flex; flex-direction: column; gap: 8px; }
+    .apn-rad { display: grid; grid-template-columns: 120px 1fr 1fr 80px; gap: 8px; align-items: center; }
+    .apn-dag { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+    .apn-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .toggle-check { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
+    .apn-stengt { font-size: 12px; color: var(--ink-3); }
+    .apn-time { padding: 8px 10px; border: 1px solid var(--cream-3); border-radius: 6px; font-family: 'Jost', sans-serif; font-size: 13px; background: var(--cream); width: 100%; }
+    .apn-time:focus { outline: none; border-color: var(--gold); }
+    .apn-time:disabled { opacity: 0.3; }
+
+    /* KNAPPER */
+    .knapp-rad { display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end; }
+    .knapp-prim { background: var(--gold); color: var(--white); border: none; border-radius: 8px; padding: 13px 32px; font-family: 'Jost', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .knapp-prim:hover { background: #9a7535; }
+    .knapp-prim:disabled { opacity: 0.5; cursor: not-allowed; }
+    .knapp-sek { background: none; color: var(--ink-3); border: 1px solid var(--cream-3); border-radius: 8px; padding: 13px 24px; font-family: 'Jost', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .knapp-sek:hover { border-color: var(--ink-3); color: var(--ink); }
+
+    /* FARGE-VELGER */
+    .farge-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+    .farge-alternativ { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; position: relative; }
+    .farge-alternativ.valgt { border-color: var(--ink); transform: scale(1.1); }
+    .farge-alternativ:hover { transform: scale(1.05); }
+
+    /* PREVIEW-BOKS */
+    .preview-boks { background: var(--cream-2); border: 1px solid var(--cream-3); border-radius: 10px; padding: 20px; margin-top: 20px; }
+    .preview-tittel { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+    .preview-chat { background: var(--white); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .preview-boble { padding: 8px 12px; border-radius: 10px; font-size: 12px; max-width: 80%; }
+    .preview-boble.bot { background: var(--cream-2); align-self: flex-start; border-bottom-left-radius: 3px; }
+    .preview-boble.user { color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
+
+    /* STATUS */
+    .status-boks { background: var(--cream-2); border: 1px solid var(--cream-3); border-radius: 10px; padding: 20px; margin-top: 24px; display: none; }
+    .status-linje { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 14px; }
+    .status-ikon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+    .status-ikon.venter { background: var(--cream-3); color: var(--ink-3); }
+    .status-ikon.laster { background: #fef3c7; animation: spinpuls 1s infinite; }
+    .status-ikon.ok { background: #dcfce7; color: var(--green); }
+    .status-ikon.feil { background: #fee2e2; color: var(--red); }
+    @keyframes spinpuls { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+    /* SUKSESS */
+    .suksess-kort { text-align: center; padding: 60px 40px; }
+    .suksess-ikon { font-size: 56px; margin-bottom: 24px; }
+    .suksess-tittel { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; margin-bottom: 12px; }
+    .suksess-tekst { font-size: 15px; color: var(--ink-3); line-height: 1.7; max-width: 460px; margin: 0 auto 32px; }
+    .suksess-url { background: var(--cream-2); border: 1px solid var(--cream-3); border-radius: 8px; padding: 14px 20px; font-size: 14px; font-family: monospace; color: var(--gold); margin-bottom: 32px; word-break: break-all; }
+    .suksess-knapper { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      .topbar { padding: 16px 20px; }
+      .felt-grid { grid-template-columns: 1fr; }
+      .apn-rad { grid-template-columns: 90px 1fr 1fr; }
+      .kort { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">AI<span>·</span>Salong</div>
+  <div class="topbar-sub">Onboarding</div>
+</div>
+
+<!-- STEG-INDIKATOR -->
+<div class="steg-wrap">
+  <div class="steg-rad">
+    <div class="steg">
+      <div class="steg-sirkel aktiv" id="sirkel-1">1</div>
+      <div class="steg-tekst aktiv" id="tekst-1">Salong-info</div>
+    </div>
+    <div class="steg-linje" id="linje-1"></div>
+    <div class="steg">
+      <div class="steg-sirkel" id="sirkel-2">2</div>
+      <div class="steg-tekst" id="tekst-2">Tjenester & priser</div>
+    </div>
+    <div class="steg-linje" id="linje-2"></div>
+    <div class="steg">
+      <div class="steg-sirkel" id="sirkel-3">3</div>
+      <div class="steg-tekst" id="tekst-3">Design</div>
+    </div>
+    <div class="steg-linje" id="linje-3"></div>
+    <div class="steg">
+      <div class="steg-sirkel" id="sirkel-4">4</div>
+      <div class="steg-tekst" id="tekst-4">Aktivering</div>
+    </div>
+  </div>
+</div>
+
+<div class="skjema-kort">
+
+  <!-- STEG 1: Salong-info -->
+  <div id="steg-1" class="kort">
+    <div class="kort-tittel">Fortell oss om salongen</div>
+    <div class="kort-sub">Denne informasjonen brukes av AI-assistenten og vises på nettsiden din.</div>
+    <div class="felt-grid">
+      <div class="felt-gruppe full">
+        <label class="felt-label">Salongens navn *</label>
+        <input class="felt-input" id="bedrift" placeholder="f.eks. Studio Klipp" required />
+      </div>
+      <div class="felt-gruppe full">
+        <label class="felt-label">Kort beskrivelse *</label>
+        <textarea class="felt-textarea" id="beskrivelse" placeholder="f.eks. Eksklusiv frisørsalong i hjertet av Oslo – vi kombinerer håndverk med lidenskap."></textarea>
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Adresse *</label>
+        <input class="felt-input" id="adresse" placeholder="Storgata 12, 0182 Oslo" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Telefon *</label>
+        <input class="felt-input" id="telefon" placeholder="+47 22 33 44 55" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">E-post *</label>
+        <input class="felt-input" id="epost" type="email" placeholder="hei@salongen.no" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Nettside (valgfri)</label>
+        <input class="felt-input" id="nettside" placeholder="https://salongen.no" />
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Cal.com booking-URL *</label>
+        <input class="felt-input" id="bookinglink" placeholder="https://cal.eu/ditt-navn/frisørtime" />
+        <span class="felt-hint">Din Cal.com booking-lenke</span>
+      </div>
+      <div class="felt-gruppe">
+        <label class="felt-label">Cal.com Event Type ID *</label>
+        <input class="felt-input" id="cal-event-id" placeholder="305430" />
+        <span class="felt-hint">Finn ID-en i Cal.com URL-en</span>
+      </div>
+    </div>
+
+    <!-- Åpningstider -->
+    <div style="margin-top:28px;">
+      <div class="felt-label" style="margin-bottom:12px;">Åpningstider *</div>
+      <div class="apn-grid" id="apn-grid">
+        <!-- Genereres av JS -->
+      </div>
+    </div>
+
+    <div class="knapp-rad">
+      <button class="knapp-prim" onclick="gaaTilSteg(2)">Neste →</button>
+    </div>
+  </div>
+
+  <!-- STEG 2: Tjenester & priser -->
+  <div id="steg-2" class="kort" style="display:none;">
+    <div class="kort-tittel">Tjenester og priser</div>
+    <div class="kort-sub">Legg til tjenestene du tilbyr. AI-assistenten bruker dette til å svare på spørsmål om priser.</div>
+    <div id="tjenester-liste" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>
+    <button class="knapp-sek" onclick="leggTilTjeneste()" style="width:100%;">+ Legg til tjeneste</button>
+    <div class="felt-gruppe full" style="margin-top:24px;">
+      <label class="felt-label">Ekstra info til AI-assistenten (valgfri)</label>
+      <textarea class="felt-textarea" id="ekstra-info" placeholder="f.eks. Vi anbefaler allergitest 48t før første farging. Vi tar imot drop-in hvis det er ledig kapasitet..."></textarea>
+    </div>
+    <div class="knapp-rad">
+      <button class="knapp-sek" onclick="gaaTilSteg(1)">← Tilbake</button>
+      <button class="knapp-prim" onclick="gaaTilSteg(3)">Neste →</button>
+    </div>
+  </div>
+
+  <!-- STEG 3: Design -->
+  <div id="steg-3" class="kort" style="display:none;">
+    <div class="kort-tittel">Velg fargetema</div>
+    <div class="kort-sub">Velg en farge som matcher salongens profil. Dette brukes i chat-vinduet og på nettsiden.</div>
+
+    <div class="felt-label" style="margin-bottom:6px;">Primærfarge</div>
+    <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;">Velg en forhåndsdefinert farge, eller skriv inn din egen HEX-kode nedenfor.</div>
+    <div class="farge-grid" id="farge-grid">
+      <div class="farge-alternativ valgt" style="background:#b8924a;" data-farge="#b8924a" data-navn="Gull" onclick="velgFargeEl(this)" title="Gull"></div>
+      <div class="farge-alternativ" style="background:#1a1510;" data-farge="#1a1510" data-navn="Kull" onclick="velgFargeEl(this)" title="Kull"></div>
+      <div class="farge-alternativ" style="background:#2d6a4f;" data-farge="#2d6a4f" data-navn="Skoggrønn" onclick="velgFargeEl(this)" title="Skoggrønn"></div>
+      <div class="farge-alternativ" style="background:#c0392b;" data-farge="#c0392b" data-navn="Rød" onclick="velgFargeEl(this)" title="Rød"></div>
+      <div class="farge-alternativ" style="background:#2c3e6b;" data-farge="#2c3e6b" data-navn="Marineblå" onclick="velgFargeEl(this)" title="Marineblå"></div>
+      <div class="farge-alternativ" style="background:#6d4c9e;" data-farge="#6d4c9e" data-navn="Lilla" onclick="velgFargeEl(this)" title="Lilla"></div>
+      <div class="farge-alternativ" style="background:#c97b30;" data-farge="#c97b30" data-navn="Oransje" onclick="velgFargeEl(this)" title="Oransje"></div>
+      <div class="farge-alternativ" style="background:#1a7a8a;" data-farge="#1a7a8a" data-navn="Teal" onclick="velgFargeEl(this)" title="Teal"></div>
+      <div class="farge-alternativ" style="background:#e91e8c;" data-farge="#e91e8c" data-navn="Rosa" onclick="velgFargeEl(this)" title="Rosa"></div>
+      <div class="farge-alternativ" style="background:#e8b84b;" data-farge="#e8b84b" data-navn="Gul" onclick="velgFargeEl(this)" title="Gul"></div>
+      <div class="farge-alternativ" style="background:#607d8b;" data-farge="#607d8b" data-navn="Skifer" onclick="velgFargeEl(this)" title="Skifer"></div>
+      <div class="farge-alternativ" style="background:#3e7c4c;" data-farge="#3e7c4c" data-navn="Smaragd" onclick="velgFargeEl(this)" title="Smaragd"></div>
+    </div>
+
+    <!-- Egendefinert farge -->
+    <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+      <div style="position:relative;">
+        <input type="color" id="farge-picker" value="#b8924a"
+          style="width:44px;height:44px;border:none;border-radius:8px;cursor:pointer;padding:2px;background:none;"
+          oninput="velgFargeCustom(this.value)" />
+      </div>
+      <div style="flex:1;">
+        <div class="felt-label" style="margin-bottom:4px;">Egendefinert HEX-farge</div>
+        <input class="felt-input" id="farge-hex" placeholder="#b8924a" value="#b8924a" maxlength="7"
+          style="font-family:monospace;margin:0;"
+          oninput="oppdaterFraHex(this.value)" />
+      </div>
+      <div id="farge-forhands" style="width:44px;height:44px;border-radius:8px;background:#b8924a;border:1px solid var(--cream-3);flex-shrink:0;"></div>
+    </div>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:6px;">Du kan lime inn en HEX-kode direkte, f.eks. fra salongens logo eller branding-farger.</div>
+
+    <!-- Bakgrunnsfarge -->
+    <div style="margin-top:28px;">
+      <div class="felt-label" style="margin-bottom:6px;">Bakgrunnsfarge</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;">Velg bakgrunnsfargen på chat-vinduet og nettsiden.</div>
+      <div class="farge-grid" id="bakgrunn-grid">
+        <div class="farge-alternativ valgt" style="background:#f5f0e8;" data-farge="#f5f0e8" onclick="velgBakgrunn(this)" title="Krem (standard)"></div>
+        <div class="farge-alternativ" style="background:#ffffff;" data-farge="#ffffff" onclick="velgBakgrunn(this)" title="Hvit"></div>
+        <div class="farge-alternativ" style="background:#f0f4f8;" data-farge="#f0f4f8" onclick="velgBakgrunn(this)" title="Isblå"></div>
+        <div class="farge-alternativ" style="background:#f4f0f8;" data-farge="#f4f0f8" onclick="velgBakgrunn(this)" title="Lavendel"></div>
+        <div class="farge-alternativ" style="background:#f0f8f2;" data-farge="#f0f8f2" onclick="velgBakgrunn(this)" title="Mintgrønn"></div>
+        <div class="farge-alternativ" style="background:#1a1510;" data-farge="#1a1510" onclick="velgBakgrunn(this)" title="Mørk"></div>
+      </div>
+    </div>
+
+    <div class="preview-boks" style="margin-top:24px;">
+      <div class="preview-tittel">Forhåndsvisning av chat</div>
+      <div class="preview-chat">
+        <div class="preview-boble bot" id="preview-bot-boble">Hei! 👋 Velkommen til <strong id="preview-navn">salongen</strong>. Hvordan kan jeg hjelpe deg?</div>
+        <div class="preview-boble user" id="preview-user-boble" style="background:#b8924a;">Vil gjerne booke time 😊</div>
+      </div>
+    </div>
+
+    <div class="felt-gruppe" style="margin-top:24px;">
+      <label class="felt-label">Tone / Personlighet</label>
+      <select class="felt-select" id="tone">
+        <option value="vennlig og profesjonell">Vennlig og profesjonell</option>
+        <option value="varm og personlig">Varm og personlig</option>
+        <option value="eksklusiv og elegant">Eksklusiv og elegant</option>
+        <option value="ungdommelig og energisk">Ungdommelig og energisk</option>
+      </select>
+    </div>
+
+    <div class="knapp-rad">
+      <button class="knapp-sek" onclick="gaaTilSteg(2)">← Tilbake</button>
+      <button class="knapp-prim" onclick="gaaTilSteg(4)">Neste →</button>
+    </div>
+  </div>
+
+  <!-- STEG 4: Aktivering -->
+  <div id="steg-4" class="kort" style="display:none;">
+    <div class="kort-tittel">Aktiver salongen</div>
+    <div class="kort-sub">Vi setter opp alt automatisk – chatbot, nettside og dashboard. Det tar 2–3 minutter.</div>
+
+    <div class="felt-grid">
+      <div class="felt-gruppe full">
+        <label class="felt-label">OpenAI API-nøkkel *</label>
+        <input class="felt-input" id="openai-key" type="password" placeholder="sk-..." />
+        <span class="felt-hint">Hentes fra platform.openai.com → API Keys</span>
+      </div>
+      <div class="felt-gruppe full">
+        <label class="felt-label">Cal.com API-nøkkel *</label>
+        <input class="felt-input" id="cal-key" type="password" placeholder="cal_live_..." />
+        <span class="felt-hint">Hentes fra Cal.com → Settings → Developer → API Keys</span>
+      </div>
+    </div>
+
+    <div class="status-boks" id="status-boks">
+      <div class="status-linje" id="status-config">
+        <div class="status-ikon venter" id="ikon-config">⏳</div>
+        <div>Genererer konfigurasjon...</div>
+      </div>
+      <div class="status-linje" id="status-render">
+        <div class="status-ikon venter" id="ikon-render">⏳</div>
+        <div>Oppretter Render-instans...</div>
+      </div>
+      <div class="status-linje" id="status-deploy">
+        <div class="status-ikon venter" id="ikon-deploy">⏳</div>
+        <div>Deployer applikasjonen...</div>
+      </div>
+      <div class="status-linje" id="status-epost">
+        <div class="status-ikon venter" id="ikon-epost">⏳</div>
+        <div>Sender velkomstepost...</div>
+      </div>
+    </div>
+
+    <div class="knapp-rad">
+      <button class="knapp-sek" onclick="gaaTilSteg(3)">← Tilbake</button>
+      <button class="knapp-prim" id="aktiver-btn" onclick="aktiverSalong()">🚀 Aktiver salong</button>
+    </div>
+  </div>
+
+  <!-- STEG 5: SUKSESS -->
+  <div id="steg-5" class="kort" style="display:none;">
+    <div class="suksess-kort">
+      <div class="suksess-ikon">🎉</div>
+      <div class="suksess-tittel">Salongen er aktiv!</div>
+      <div class="suksess-tekst">
+        AI-assistenten, nettsiden og dashboardet er klart. En velkomstepost med alle detaljer er sendt til <strong id="suksess-epost"></strong>.
+      </div>
+      <div class="suksess-url" id="suksess-url"></div>
+      <div class="suksess-knapper">
+        <a id="suksess-link-nettside" href="#" target="_blank" class="knapp-prim" style="text-decoration:none;">Se nettsiden →</a>
+        <a id="suksess-link-dashboard" href="#" target="_blank" class="knapp-sek" style="text-decoration:none;padding:13px 24px;border:1px solid var(--cream-3);border-radius:8px;color:var(--ink-3);">Åpne dashboard</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── ÅPNINGSTIDER ─────────────────────────────────────────────────────────────
+  const dager = [
+    { id: "mandag",   navn: "Mandag",   std: { fra: "10:00", til: "20:00", apen: true } },
+    { id: "tirsdag",  navn: "Tirsdag",  std: { fra: "10:00", til: "20:00", apen: true } },
+    { id: "onsdag",   navn: "Onsdag",   std: { fra: "10:00", til: "20:00", apen: true } },
+    { id: "torsdag",  navn: "Torsdag",  std: { fra: "10:00", til: "18:00", apen: true } },
+    { id: "fredag",   navn: "Fredag",   std: { fra: "10:00", til: "15:00", apen: true } },
+    { id: "lordag",   navn: "Lørdag",   std: { fra: "10:00", til: "15:00", apen: false } },
+    { id: "sondag",   navn: "Søndag",   std: { fra: "10:00", til: "15:00", apen: false } },
+  ];
+
+  function byggApningstider() {
+    const grid = document.getElementById("apn-grid");
+    grid.innerHTML = dager.map(d => `
+      <div class="apn-rad">
+        <div class="apn-dag">${d.navn}</div>
+        <input type="time" class="apn-time" id="apn-${d.id}-fra" value="${d.std.fra}" ${!d.std.apen ? "disabled" : ""} />
+        <input type="time" class="apn-time" id="apn-${d.id}-til" value="${d.std.til}" ${!d.std.apen ? "disabled" : ""} />
+        <label class="apn-toggle">
+          <input type="checkbox" class="toggle-check" id="apn-${d.id}-apen" ${d.std.apen ? "checked" : ""}
+            onchange="toggleApn('${d.id}')" />
+          <span class="apn-stengt">${d.std.apen ? "Åpen" : "Stengt"}</span>
+        </label>
+      </div>
+    `).join("");
+  }
+
+  function toggleApn(id) {
+    const cb   = document.getElementById(`apn-${id}-apen`);
+    const fra  = document.getElementById(`apn-${id}-fra`);
+    const til  = document.getElementById(`apn-${id}-til`);
+    const span = cb.nextElementSibling;
+    fra.disabled = !cb.checked;
+    til.disabled = !cb.checked;
+    span.textContent = cb.checked ? "Åpen" : "Stengt";
+  }
+
+  byggApningstider();
+
+  // ── TJENESTER ─────────────────────────────────────────────────────────────────
+  let tjenester = [
+    { navn: "Herreklipp", pris: "350 kr" },
+    { navn: "Dameklipp",  pris: "fra 550 kr" },
+    { navn: "Barneklipp", pris: "250 kr" },
+    { navn: "Farge",      pris: "fra 800 kr" },
+  ];
+
+  function byggTjenester() {
+    document.getElementById("tjenester-liste").innerHTML = tjenester.map((t, i) => `
+      <div style="display:grid;grid-template-columns:1fr 140px 36px;gap:8px;align-items:center;">
+        <input class="felt-input" value="${t.navn}" oninput="tjenester[${i}].navn=this.value" placeholder="Tjenestenavn" style="margin:0;" />
+        <input class="felt-input" value="${t.pris}" oninput="tjenester[${i}].pris=this.value" placeholder="Pris" style="margin:0;" />
+        <button onclick="fjernTjeneste(${i})" style="background:none;border:1px solid var(--cream-3);border-radius:6px;cursor:pointer;padding:8px;color:var(--ink-3);font-size:14px;">✕</button>
+      </div>
+    `).join("");
+  }
+
+  function leggTilTjeneste() {
+    tjenester.push({ navn: "", pris: "" });
+    byggTjenester();
+  }
+
+  function fjernTjeneste(i) {
+    tjenester.splice(i, 1);
+    byggTjenester();
+  }
+
+  byggTjenester();
+
+  // ── FARGE ────────────────────────────────────────────────────────────────────
+  let valgtFarge      = "#b8924a";
+  let valgtBakgrunn   = "#f5f0e8";
+
+  function velgFargeEl(el) {
+    document.querySelectorAll("#farge-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+    el.classList.add("valgt");
+    valgtFarge = el.dataset.farge;
+    document.getElementById("preview-user-boble").style.background = valgtFarge;
+    document.getElementById("farge-hex").value   = valgtFarge;
+    document.getElementById("farge-picker").value = valgtFarge;
+    document.getElementById("farge-forhands").style.background = valgtFarge;
+  }
+
+  // Behold gammel funksjon for bakoverkompatibilitet
+  function velgFarge(el) { velgFargeEl(el); }
+
+  function velgFargeCustom(hex) {
+    valgtFarge = hex;
+    document.getElementById("farge-hex").value = hex;
+    document.getElementById("farge-forhands").style.background = hex;
+    document.getElementById("preview-user-boble").style.background = hex;
+    document.querySelectorAll("#farge-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+  }
+
+  function oppdaterFraHex(val) {
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+      valgtFarge = val;
+      document.getElementById("farge-picker").value = val;
+      document.getElementById("farge-forhands").style.background = val;
+      document.getElementById("preview-user-boble").style.background = val;
+      document.querySelectorAll("#farge-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+    }
+  }
+
+  function velgBakgrunn(el) {
+    document.querySelectorAll("#bakgrunn-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+    el.classList.add("valgt");
+    valgtBakgrunn = el.dataset.farge;
+    document.getElementById("preview-chat").style.background = valgtBakgrunn;
+  }
+
+  // Preview oppdateres live
+  document.addEventListener("input", e => {
+    if (e.target.id === "bedrift") {
+      document.getElementById("preview-navn").textContent = e.target.value || "salongen";
+    }
+  });
+
+  // ── STEG-NAVIGASJON ───────────────────────────────────────────────────────────
+  let gjeldende = 1;
+
+  function gaaTilSteg(n) {
+    if (n > gjeldende && !valider(gjeldende)) return;
+    document.getElementById(`steg-${gjeldende}`).style.display = "none";
+    document.getElementById(`steg-${n}`).style.display = "";
+    oppdaterStegIndikator(gjeldende, n);
+    gjeldende = n;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function oppdaterStegIndikator(fra, til) {
+    for (let i = 1; i <= 4; i++) {
+      const sirkel = document.getElementById(`sirkel-${i}`);
+      const tekst  = document.getElementById(`tekst-${i}`);
+      sirkel.className = "steg-sirkel" + (i < til ? " ferdig" : i === til ? " aktiv" : "");
+      sirkel.textContent = i < til ? "✓" : i;
+      tekst.className  = "steg-tekst" + (i === til ? " aktiv" : "");
+      if (i < 4) {
+        document.getElementById(`linje-${i}`).className = "steg-linje" + (i < til ? " ferdig" : "");
+      }
+    }
+  }
+
+  function valider(steg) {
+    if (steg === 1) {
+      const krav = ["bedrift","adresse","telefon","epost","bookinglink","cal-event-id"];
+      for (const id of krav) {
+        const el = document.getElementById(id);
+        if (!el.value.trim()) {
+          el.style.borderColor = "#ef4444";
+          el.focus();
+          setTimeout(() => el.style.borderColor = "", 2000);
+          return false;
+        }
+      }
+    }
+    if (steg === 4) {
+      if (!document.getElementById("openai-key").value.trim()) return false;
+      if (!document.getElementById("cal-key").value.trim()) return false;
+    }
+    return true;
+  }
+
+  // ── AKTIVER SALONG ────────────────────────────────────────────────────────────
+  async function aktiverSalong() {
+    if (!valider(4)) {
+      alert("Fyll inn OpenAI og Cal.com API-nøkler.");
+      return;
+    }
+
+    const btn = document.getElementById("aktiver-btn");
+    btn.disabled = true;
+    btn.textContent = "Aktiverer...";
+    document.getElementById("status-boks").style.display = "block";
+
+    // Bygg åpningstider-objekt
+    const apningstider = {};
+    dager.forEach(d => {
+      const apen = document.getElementById(`apn-${d.id}-apen`).checked;
+      const fra  = document.getElementById(`apn-${d.id}-fra`).value;
+      const til  = document.getElementById(`apn-${d.id}-til`).value;
+      apningstider[d.navn] = apen ? `${fra} – ${til}` : "Stengt";
+    });
+
+    const konfig = {
+      bedrift:      document.getElementById("bedrift").value.trim(),
+      beskrivelse:  document.getElementById("beskrivelse").value.trim(),
+      adresse:      document.getElementById("adresse").value.trim(),
+      telefon:      document.getElementById("telefon").value.trim(),
+      epost:        document.getElementById("epost").value.trim(),
+      nettside:     document.getElementById("nettside").value.trim(),
+      bookinglink:  document.getElementById("bookinglink").value.trim(),
+      calEventId:   document.getElementById("cal-event-id").value.trim(),
+      bransje:      "frisørsalong",
+      tone:         document.getElementById("tone").value,
+      sprakOgLand:  "norsk",
+      farge:        valgtFarge,
+      bakgrunn:     valgtBakgrunn,
+      tjenester:    tjenester.filter(t => t.navn).map(t => t.navn),
+      priser:       tjenester.filter(t => t.navn).map(t => `${t.navn}: ${t.pris}`),
+      apningstider,
+      ekstraInfo:   document.getElementById("ekstra-info").value.trim(),
+    };
+
+    const apiKeys = {
+      openaiKey: document.getElementById("openai-key").value.trim(),
+      calKey:    document.getElementById("cal-key").value.trim(),
+    };
+
+    setStatusIkon("config", "laster");
+
+    try {
+      const res = await fetch("/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ konfig, apiKeys })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setStatusIkon("config", "feil");
+        alert("Feil: " + (data.feil || "Ukjent feil"));
+        btn.disabled = false;
+        btn.textContent = "🚀 Aktiver salong";
+        return;
+      }
+
+      setStatusIkon("config", "ok");
+      setStatusIkon("render", "ok");
+      setStatusIkon("deploy", "ok");
+      setStatusIkon("epost", "ok");
+
+      // Vis suksess
+      document.getElementById("steg-4").style.display = "none";
+      document.getElementById("steg-5").style.display = "";
+      document.getElementById("suksess-epost").textContent = konfig.epost;
+      document.getElementById("suksess-url").textContent   = data.url;
+      document.getElementById("suksess-link-nettside").href   = data.url;
+      document.getElementById("suksess-link-dashboard").href  = data.url + "/dashboard";
+      oppdaterStegIndikator(4, 5);
+
+    } catch (err) {
+      setStatusIkon("config", "feil");
+      alert("Nettverksfeil: " + err.message);
+      btn.disabled = false;
+      btn.textContent = "🚀 Aktiver salong";
+    }
+  }
+
+  function setStatusIkon(id, tilstand) {
+    const el = document.getElementById(`ikon-${id}`);
+    el.className = `status-ikon ${tilstand}`;
+    el.textContent = tilstand === "ok" ? "✓" : tilstand === "feil" ? "✗" : "⏳";
+  }
+</script>
+</body>
+</html>
