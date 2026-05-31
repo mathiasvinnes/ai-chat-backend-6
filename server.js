@@ -781,6 +781,7 @@ app.post("/provision", corsPrivat, async (req, res) => {
         serviceDetails: {
           plan: "free",
           region: "frankfurt",
+          runtime: "node",
           numInstances: 1,
           envSpecificDetails: {
             buildCommand: "npm install",
