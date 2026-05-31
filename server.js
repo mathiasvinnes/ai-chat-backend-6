@@ -749,27 +749,35 @@ app.post("/provision", corsPrivat, async (req, res) => {
     // 2. Bygg config.json-innhold
     const configJson = {
       bedrift:      konfig.bedrift,
-      bransje:      konfig.bransje || "frisørsalong",
-      tone:         konfig.tone || "vennlig og profesjonell",
+      bransje:      konfig.bransje     || "frisørsalong",
+      tone:         konfig.tone        || "vennlig og profesjonell",
       sprakOgLand:  "norsk",
-      adresse:      konfig.adresse,
-      telefon:      konfig.telefon,
-      epost:        konfig.epost,
-      bookinglink:  konfig.bookinglink,
-      tjenester:    konfig.tjenester || [],
-      priser:       konfig.priser || [],
+      adresse:      konfig.adresse     || "",
+      telefon:      konfig.telefon     || "",
+      epost:        konfig.epost       || "",
+      bookinglink:  konfig.bookinglink || "",
+      tjenester:    konfig.tjenester   || [],
+      priser:       konfig.priser      || [],
       apningstider: konfig.apningstider || {},
-      farge:        konfig.farge || "#b8924a",
+      farge:        konfig.farge       || "#b8924a",
+      bakgrunn:     konfig.bakgrunn    || "#f5f0e8",
+      beskrivelse:  konfig.beskrivelse || "",
+      usp:          konfig.usp         || [],
+      produkter:    konfig.produkter   || "",
+      erfaringAar:  konfig.erfaringAar || "",
+      ansatte:      konfig.ansatte     || "",
+      kunder:       konfig.kunder      || "",
+      bildeHero:    konfig.bildeHero   || "",
+      bildeOm:      konfig.bildeOm     || "",
+      ekstraInfo:   konfig.ekstraInfo  || "",
       faq: {
-        drop_in:       "Vi tar imot drop-in hvis det er ledig kapasitet, men vi anbefaler å booke time.",
-        avbestilling:  "Avbestilling må skje senest 24 timer før timen.",
-        betaling:      "Vi tar imot kort og Vipps.",
-        allergitest:   "Vi anbefaler allergitest 48 timer før farging.",
-        garanti:       "Er du ikke fornøyd? Kom tilbake innen 7 dager, så fikser vi det gratis."
+        drop_in:      "Vi tar imot drop-in hvis det er ledig kapasitet, men vi anbefaler å booke time.",
+        avbestilling: "Avbestilling må skje senest 24 timer før timen.",
+        betaling:     "Vi tar imot kort og Vipps.",
+        allergitest:  "Vi anbefaler allergitest 48 timer før farging.",
+        garanti:      "Er du ikke fornøyd? Kom tilbake innen 7 dager, så fikser vi det gratis."
       }
     };
-
-    if (konfig.ekstraInfo) configJson.ekstraInfo = konfig.ekstraInfo;
 
     // 3. Hent owner ID automatisk fra eksisterende service
     let ownerId = process.env.RENDER_OWNER_ID;
