@@ -11,10 +11,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let CONFIG;
 try {
-  CONFIG = JSON.parse(readFileSync(path.join(__dirname, "config.json"), "utf-8"));
+  // Prøv config.json først, fall tilbake til CONFIG_JSON env var (for auto-opprette instanser)
+  if (process.env.CONFIG_JSON) {
+    CONFIG = JSON.parse(process.env.CONFIG_JSON);
+    console.log("[CONFIG] Lastet fra CONFIG_JSON miljøvariabel");
+  } else {
+    CONFIG = JSON.parse(readFileSync(path.join(__dirname, "config.json"), "utf-8"));
+    console.log("[CONFIG] Lastet fra config.json");
+  }
 } catch (err) {
-  console.error("[FEIL] Kunne ikke lese config.json:", err.message);
-  process.exit(1); // Avslutt tydelig med feilkode
+  console.error("[FEIL] Kunne ikke laste konfigurasjon:", err.message);
+  process.exit(1);
 }
 
 // ── Supabase ──────────────────────────────────────────────────────────────────
@@ -765,7 +772,7 @@ app.post("/provision", corsPrivat, async (req, res) => {
         envVars: [
           { key: "OPENAI_API_KEY",    value: process.env.OPENAI_API_KEY || "" },
           { key: "CAL_API_KEY",       value: process.env.CAL_API_KEY    || "" },
-          { key: "CAL_EVENT_TYPE_ID", value: String(konfig.calEventId || "") },
+          { key: "CAL_EVENT_TYPE_ID", value: String(konfig.calEventId || process.env.CAL_EVENT_TYPE_ID || "") },
           { key: "SUPABASE_URL",      value: process.env.SUPABASE_URL   || "" },
           { key: "SUPABASE_KEY",      value: process.env.SUPABASE_KEY   || "" },
           { key: "SENDGRID_KEY",      value: process.env.SENDGRID_KEY   || "" },
@@ -773,11 +780,12 @@ app.post("/provision", corsPrivat, async (req, res) => {
         ],
         serviceDetails: {
           plan: "free",
-          runtime: "node",
-          buildCommand: "npm install",
-          startCommand: "node server.js",
           region: "frankfurt",
-          numInstances: 1
+          numInstances: 1,
+          envSpecificDetails: {
+            buildCommand: "npm install",
+            startCommand: "node server.js"
+          }
         }
       })
     });
@@ -789,9 +797,10 @@ app.post("/provision", corsPrivat, async (req, res) => {
       return res.status(502).json({ ok: false, feil: "Render API-feil: " + (renderData.message || "Ukjent") });
     }
 
-    const serviceId  = renderData.service?.id;
-    const serviceUrl = renderData.service?.serviceDetails?.url
-      || `https://${tjenestenavn}.onrender.com`;
+    const serviceId  = renderData.service?.id || renderData.id;
+    // Render URL er ikke tilgjengelig med en gang – bygg den fra tjenestenavnet
+    const serviceUrl = `https://${tjenestenavn}.onrender.com`;
+    console.log(`[PROVISION] Service ID: ${serviceId}, URL: ${serviceUrl}`);
 
     console.log(`[PROVISION] Ny salong opprettet: ${konfig.bedrift} → ${serviceUrl}`);
 
