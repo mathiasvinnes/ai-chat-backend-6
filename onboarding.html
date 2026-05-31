@@ -181,15 +181,21 @@
         <label class="felt-label">Nettside (valgfri)</label>
         <input class="felt-input" id="nettside" placeholder="https://salongen.no" />
       </div>
-      <div class="felt-gruppe">
-        <label class="felt-label">Cal.com booking-URL *</label>
-        <input class="felt-input" id="bookinglink" placeholder="https://cal.eu/ditt-navn/frisørtime" />
-        <span class="felt-hint">Din Cal.com booking-lenke</span>
-      </div>
-      <div class="felt-gruppe">
-        <label class="felt-label">Cal.com Event Type ID *</label>
-        <input class="felt-input" id="cal-event-id" placeholder="305430" />
-        <span class="felt-hint">Finn ID-en i Cal.com URL-en</span>
+      <div class="felt-gruppe full">
+        <label class="felt-label">Cal.com booking-lenke *</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="flex:1;">
+            <input class="felt-input" id="bookinglink" placeholder="https://cal.eu/ditt-navn/frisørtime"
+              oninput="sjekkCalUrl(this.value)" style="margin:0;" />
+            <span class="felt-hint">Lim inn hele URL-en fra Cal.com – vi henter resten automatisk</span>
+          </div>
+          <div id="cal-status" style="padding-top:10px;font-size:18px;width:28px;text-align:center;"></div>
+        </div>
+        <div id="cal-info" style="display:none;margin-top:8px;background:var(--cream-2);border:1px solid var(--cream-3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ink-2);">
+          <strong>✅ Event type funnet:</strong> <span id="cal-event-navn"></span>
+          <input type="hidden" id="cal-event-id" />
+        </div>
+        <div id="cal-feil" style="display:none;margin-top:6px;font-size:12px;color:#ef4444;"></div>
       </div>
     </div>
 
@@ -479,6 +485,66 @@
     }
   });
 
+  // ── CAL.COM URL-SJEKK ────────────────────────────────────────────────────────
+  let calSjekk = null;
+
+  async function sjekkCalUrl(url) {
+    clearTimeout(calSjekk);
+    const statusEl = document.getElementById("cal-status");
+    const infoEl   = document.getElementById("cal-info");
+    const feilEl   = document.getElementById("cal-feil");
+    const navnEl   = document.getElementById("cal-event-navn");
+    const idEl     = document.getElementById("cal-event-id");
+
+    if (!url || url.length < 10) {
+      statusEl.textContent = "";
+      infoEl.style.display = "none";
+      feilEl.style.display = "none";
+      return;
+    }
+
+    statusEl.textContent = "⏳";
+
+    // Debounce – vent 800ms etter siste tastetrykk
+    calSjekk = setTimeout(async () => {
+      try {
+        // Trekk ut slug fra URL: cal.eu/brukernavn/slug eller cal.com/brukernavn/slug
+        const match = url.match(/cal\.(?:eu|com)\/([^/?]+)\/([^/?]+)/);
+        if (!match) {
+          statusEl.textContent = "❌";
+          feilEl.textContent   = "URL-en ser ikke riktig ut. Bruk f.eks. https://cal.eu/ditt-navn/frisørtime";
+          feilEl.style.display = "block";
+          infoEl.style.display = "none";
+          return;
+        }
+
+        const brukernavn = match[1];
+        const slug       = match[2];
+
+        // Kall vår server for å hente event type ID
+        const res  = await fetch(`/cal-lookup?username=${encodeURIComponent(brukernavn)}&slug=${encodeURIComponent(slug)}`);
+        const data = await res.json();
+
+        if (data.ok) {
+          statusEl.textContent  = "✅";
+          navnEl.textContent    = data.navn + " (" + data.varighet + " min)";
+          idEl.value            = data.id;
+          infoEl.style.display  = "block";
+          feilEl.style.display  = "none";
+        } else {
+          statusEl.textContent = "❌";
+          feilEl.textContent   = data.feil || "Fant ikke event type. Sjekk at URL-en er riktig.";
+          feilEl.style.display = "block";
+          infoEl.style.display = "none";
+        }
+      } catch (err) {
+        statusEl.textContent = "⚠️";
+        feilEl.textContent   = "Kunne ikke sjekke URL-en. Prøv igjen.";
+        feilEl.style.display = "block";
+      }
+    }, 800);
+  }
+
   // ── STEG-NAVIGASJON ───────────────────────────────────────────────────────────
   let gjeldende = 1;
 
@@ -506,7 +572,16 @@
 
   function valider(steg) {
     if (steg === 1) {
-      const krav = ["bedrift","adresse","telefon","epost","bookinglink","cal-event-id"];
+      const krav = ["bedrift","adresse","telefon","epost","bookinglink"];
+      // Sjekk at Cal.com event type er funnet
+      if (!document.getElementById("cal-event-id").value) {
+        const el = document.getElementById("bookinglink");
+        el.style.borderColor = "#ef4444";
+        setTimeout(() => el.style.borderColor = "", 2000);
+        document.getElementById("cal-feil").textContent = "Skriv inn en gyldig Cal.com URL først.";
+        document.getElementById("cal-feil").style.display = "block";
+        return false;
+      }
       for (const id of krav) {
         const el = document.getElementById(id);
         if (!el.value.trim()) {
