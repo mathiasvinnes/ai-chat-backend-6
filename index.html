@@ -469,10 +469,8 @@
     <h1 class="hero-tittel fade-in fade-in-2">
       Din hår<em>drøm</em><br>begynner her
     </h1>
-    <p class="hero-tekst fade-in fade-in-3">
-      <span class="bedrift-beskrivelse">Hos Studio Klipp kombinerer vi håndverk med lidenskap.</span> Hvert besøk er en opplevelse – skreddersydd for deg.
-      <br><br>
-      <em style="font-style:italic;color:var(--ink-3)">At Studio Klipp, we combine craft with passion. Every visit is an experience tailored to you.</em>
+    <p class="hero-tekst fade-in fade-in-3" id="hero-tekst">
+      Hos Studio Klipp kombinerer vi håndverk med lidenskap. Hvert besøk er en opplevelse – skreddersydd for deg.
     </p>
     <div class="hero-knapper fade-in fade-in-4">
       <a href="#" class="knapp-prim" onclick="apnChat(); return false;">Book time nå</a>
@@ -488,12 +486,12 @@
         <div class="hero-stat-label">Års erfaring</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-tall">2k+</div>
-        <div class="hero-stat-label">Fornøyde kunder</div>
+        <div class="hero-stat-tall" id="stat-kunder">2k+</div>
+        <div class="hero-stat-label" id="stat-kunder-label">Fornøyde kunder</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-tall">5★</div>
-        <div class="hero-stat-label">Vurdering</div>
+        <div class="hero-stat-tall" id="stat-ansatte">5</div>
+        <div class="hero-stat-label">Ansatte</div>
       </div>
     </div>
   </div>
@@ -507,14 +505,11 @@
   </div>
   <div>
     <div class="seksjon-over fade-in">Om oss · About us</div>
-    <h2 class="seksjon-tittel fade-in fade-in-2">
+    <h2 class="seksjon-tittel fade-in fade-in-2" id="om-tittel">
       Håndverk med<br>sjel og presisjon
     </h2>
-    <p class="seksjon-tekst fade-in fade-in-3">
+    <p class="seksjon-tekst fade-in fade-in-3" id="om-tekst">
       Studio Klipp ble grunnlagt med én tanke: alle fortjener å føle seg bra etter et salongenbesøk. Vi har samlet et team av dyktige frisører med bred erfaring innen klipp, farge og behandlinger.
-    </p>
-    <p class="seksjon-tekst fade-in fade-in-3" style="margin-top:16px;font-style:italic;color:var(--cream-3);font-size:13px;">
-      Studio Klipp was founded with one idea: everyone deserves to feel great after a salon visit. We've gathered a team of skilled stylists with broad experience in cuts, color and treatments.
     </p>
     <div class="om-features fade-in fade-in-4" id="usp-wrap">
       <div class="om-feature">
@@ -584,19 +579,15 @@
   <p class="seksjon-tekst fade-in fade-in-3" style="color:rgba(255,255,255,0.45);">
     Alle priser inkluderer vask, klipp og enkel styling. Endelig pris avklares alltid i konsultasjon.
   </p>
-  <div class="priser-grid fade-in fade-in-4">
+  <div class="priser-grid fade-in fade-in-4" id="priser-grid">
     <div>
       <div class="pris-rad"><span class="pris-navn">Herreklipp</span><span class="pris-pris">350 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Herreklipp + skjegg</span><span class="pris-pris">450 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Dameklipp (kort)</span><span class="pris-pris">550 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Dameklipp (langt)</span><span class="pris-pris">650 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Barneklipp (u/12 år)</span><span class="pris-pris">250 kr</span></div>
+      <div class="pris-rad"><span class="pris-navn">Dameklipp</span><span class="pris-pris">fra 550 kr</span></div>
+      <div class="pris-rad"><span class="pris-navn">Barneklipp</span><span class="pris-pris">250 kr</span></div>
     </div>
     <div>
-      <div class="pris-rad"><span class="pris-navn">Helfarging</span><span class="pris-pris">fra 800 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Highlights / Balayage</span><span class="pris-pris">fra 1 200 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Hårbehandling</span><span class="pris-pris">fra 400 kr</span></div>
-      <div class="pris-rad"><span class="pris-navn">Bryn & vipper</span><span class="pris-pris">200 kr</span></div>
+      <div class="pris-rad"><span class="pris-navn">Farge</span><span class="pris-pris">fra 800 kr</span></div>
+      <div class="pris-rad"><span class="pris-navn">Behandling</span><span class="pris-pris">fra 400 kr</span></div>
       <div class="pris-rad"><span class="pris-navn">Gavekort</span><span class="pris-pris">Valgfritt</span></div>
     </div>
   </div>
@@ -607,7 +598,7 @@
 <section id="kontakt">
   <div>
     <div class="seksjon-over fade-in">Kontakt · Contact</div>
-    <h2 class="seksjon-tittel fade-in fade-in-2">Finn oss –<br>vi gleder oss til å se deg</h2>
+    <h2 class="seksjon-tittel fade-in fade-in-2" id="kontakt-tittel">Finn oss –<br>vi gleder oss til å se deg</h2>
     <div class="kontakt-info fade-in fade-in-3">
       <div class="kontakt-item">
         <div class="kontakt-ikon">📍</div>
@@ -707,110 +698,144 @@
   const CHAT_API = BASE_URL + "/chat";
 
   // Config er injisert server-side – ingen fetch nødvendig
+  function e(str) {
+    return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function s(id) { return document.getElementById(id); }
+
   function lastConfig() {
     try {
       const cfg = window.SALONG_CONFIG || {};
+      if (!cfg.bedrift) { console.warn("SALONG_CONFIG mangler"); return; }
 
-      // Navn
+      // ── Navn ──────────────────────────────────────────────────────────────
       document.querySelectorAll(".bedrift-navn").forEach(el => el.textContent = cfg.bedrift);
+      document.querySelectorAll(".chat-bedrift-navn").forEach(el => el.textContent = cfg.bedrift + " AI");
       document.title = cfg.bedrift + " – Frisørsalong";
 
-      // Farger – oppdater alle CSS-variabler
+      // ── Farger ────────────────────────────────────────────────────────────
       if (cfg.farge) {
-        document.documentElement.style.setProperty("--gold", cfg.farge);
-        document.documentElement.style.setProperty("--gold-light", cfg.farge + "33");
-        // Lag mørkere versjon av primærfargen
-        const mork = cfg.farge.replace(/^#/, "");
-        document.documentElement.style.setProperty("--gold-dark", "#" + mork.replace(/../g, h => Math.max(0, parseInt(h,16)-30).toString(16).padStart(2,"0")));
+        const r = document.documentElement;
+        r.style.setProperty("--gold", cfg.farge);
+        // Beregn lysere og mørkere variant
+        const hex = cfg.farge.replace(/^#/,"");
+        const rgb = [0,2,4].map(i => parseInt(hex.substr(i,2),16));
+        const lys  = "#" + rgb.map(c => Math.min(255, c+60).toString(16).padStart(2,"0")).join("");
+        const mork = "#" + rgb.map(c => Math.max(0, c-40).toString(16).padStart(2,"0")).join("");
+        r.style.setProperty("--gold-light", lys + "40");
+        r.style.setProperty("--gold-dark",  mork);
+        // Oppdater booking-knapper med riktig farge
+        document.querySelectorAll(".knapp-prim, .nav-book, .chat-send, #chat-fab").forEach(el => {
+          el.style.background = cfg.farge;
+        });
       }
       if (cfg.bakgrunn) {
-        document.documentElement.style.setProperty("--cream", cfg.bakgrunn);
-        document.documentElement.style.setProperty("--cream-2", cfg.bakgrunn + "ee");
+        const r = document.documentElement;
+        r.style.setProperty("--cream", cfg.bakgrunn);
+        const hex = cfg.bakgrunn.replace(/^#/,"");
+        const rgb = [0,2,4].map(i => parseInt(hex.substr(i,2),16));
+        const m1  = "#" + rgb.map(c => Math.max(0,c-10).toString(16).padStart(2,"0")).join("");
+        const m2  = "#" + rgb.map(c => Math.max(0,c-20).toString(16).padStart(2,"0")).join("");
+        r.style.setProperty("--cream-2", m1);
+        r.style.setProperty("--cream-3", m2);
+        document.body.style.background = cfg.bakgrunn;
       }
 
-      // Bilder
-      if (cfg.bildeHero) {
-        const heroBilde = document.getElementById("hero-bilde");
-        if (heroBilde) heroBilde.src = cfg.bildeHero;
-      }
-      if (cfg.bildeOm) {
-        const omBilde = document.getElementById("om-bilde");
-        if (omBilde) omBilde.src = cfg.bildeOm;
-      }
+      // ── Bilder ────────────────────────────────────────────────────────────
+      if (cfg.bildeHero && s("hero-bilde")) s("hero-bilde").src = cfg.bildeHero;
+      if (cfg.bildeOm   && s("om-bilde"))   s("om-bilde").src   = cfg.bildeOm;
 
-      // Beskrivelse
-      if (cfg.beskrivelse) {
-        document.querySelectorAll(".bedrift-beskrivelse").forEach(el => el.textContent = cfg.beskrivelse);
+      // ── Hero-tekst ────────────────────────────────────────────────────────
+      if (cfg.beskrivelse && s("hero-tekst")) {
+        s("hero-tekst").textContent = cfg.beskrivelse;
+      }
+      if (cfg.beskrivelse && s("om-tekst")) {
+        s("om-tekst").textContent = cfg.beskrivelse;
       }
 
-      // Stats (erfaring, ansatte, kunder)
-      if (cfg.erfaringAar) document.getElementById("stat-erfaring").textContent = cfg.erfaringAar;
-      if (cfg.ansatte)     document.getElementById("stat-ansatte").textContent  = cfg.ansatte;
-      if (cfg.kunder)      document.getElementById("stat-kunder").textContent   = cfg.kunder;
+      // ── Stats ─────────────────────────────────────────────────────────────
+      if (cfg.erfaringAar && s("stat-erfaring")) s("stat-erfaring").textContent = cfg.erfaringAar;
+      if (cfg.ansatte     && s("stat-ansatte"))  s("stat-ansatte").textContent  = cfg.ansatte;
+      if (cfg.kunder      && s("stat-kunder"))   s("stat-kunder").textContent   = cfg.kunder;
 
-      // Kontaktinfo
-      if (cfg.adresse)  document.getElementById("info-adresse").innerHTML  = cfg.adresse.replace(", ", "<br>");
-      if (cfg.telefon)  document.getElementById("info-telefon").textContent = cfg.telefon;
-      if (cfg.epost)    document.getElementById("info-epost").textContent   = cfg.epost;
+      // ── Kontaktinfo ───────────────────────────────────────────────────────
+      if (cfg.adresse && s("info-adresse")) {
+        s("info-adresse").innerHTML = e(cfg.adresse).replace(", ", "<br>");
+      }
+      if (cfg.telefon && s("info-telefon")) s("info-telefon").textContent = cfg.telefon;
+      if (cfg.epost   && s("info-epost"))   s("info-epost").textContent   = cfg.epost;
 
-      // USP-seksjonen
-      if (cfg.usp && cfg.usp.length > 0) {
-        const uspWrap = document.getElementById("usp-wrap");
-        if (uspWrap) {
-          uspWrap.innerHTML = cfg.usp.map(u => `
-            <div class="om-feature">
-              <div class="om-feature-ikon">✨</div>
-              <div><div class="om-feature-tekst">${u}</div></div>
-            </div>`).join("");
-        }
+      // ── USP ───────────────────────────────────────────────────────────────
+      const uspWrap = s("usp-wrap");
+      if (uspWrap) {
+        const usper = (cfg.usp && cfg.usp.length > 0) ? cfg.usp : [
+          "Sertifiserte frisører",
+          "AI-drevet booking 24/7",
+          "Fornøyd-garanti"
+        ];
+        uspWrap.innerHTML = usper.map(u =>
+          `<div class="om-feature"><div class="om-feature-ikon">✨</div><div><div class="om-feature-tekst">${e(u)}</div></div></div>`
+        ).join("");
       }
 
-      // Produkter (vis kun hvis fylt inn)
-      const produktEl = document.getElementById("om-produkter");
+      // Produkter
+      const produktEl = s("om-produkter");
       if (produktEl) {
         if (cfg.produkter) {
-          produktEl.innerHTML = `<div class="om-feature">
-            <div class="om-feature-ikon">🌿</div>
-            <div>
-              <div class="om-feature-tittel">Premium produkter</div>
-              <div class="om-feature-tekst">Vi bruker ${cfg.produkter} – skånsomt mot håret, bra for miljøet.</div>
-            </div>
-          </div>`;
+          produktEl.innerHTML = `<div class="om-feature"><div class="om-feature-ikon">🌿</div><div><div class="om-feature-tittel">Premium produkter</div><div class="om-feature-tekst">Vi bruker ${e(cfg.produkter)} – skånsomt mot håret, bra for miljøet.</div></div></div>`;
+          produktEl.style.display = "";
         } else {
           produktEl.style.display = "none";
         }
       }
 
-      // Tjenester
-      if (cfg.tjenester && cfg.tjenester.length > 0) {
-        const grid = document.getElementById("tjenester-grid");
-        if (grid) {
-          grid.innerHTML = cfg.tjenester.map((t, i) => `
-            <div class="tjeneste-kort fade-in">
-              <div class="tjeneste-nummer">0${i+1}</div>
-              <div class="tjeneste-navn">${t}</div>
-              <div class="tjeneste-pris">${cfg.priser?.[i] || ""}</div>
-            </div>`).join("");
-        }
+      // ── Tjenester ─────────────────────────────────────────────────────────
+      const grid = s("tjenester-grid");
+      if (grid && cfg.tjenester && cfg.tjenester.length > 0) {
+        grid.innerHTML = cfg.tjenester.map((t, i) => {
+          // Trekk ut pris: "Herreklipp: 350 kr" → "350 kr"
+          const prisFull = cfg.priser?.[i] || "";
+          const pris = prisFull.includes(":") ? prisFull.split(":")[1].trim() : prisFull;
+          const nr   = String(i+1).padStart(2,"0");
+          return `<div class="tjeneste-kort fade-in">
+            <div class="tjeneste-nummer">${e(nr)}</div>
+            <div class="tjeneste-navn">${e(t)}</div>
+            <div class="tjeneste-pris">${e(pris)}</div>
+          </div>`;
+        }).join("");
       }
 
-      // Åpningstider
-      if (cfg.apningstider) {
-        const apnWrap = document.getElementById("apn-wrap");
-        if (apnWrap) {
-          apnWrap.innerHTML = Object.entries(cfg.apningstider).map(([dag, tid]) => `
-            <div class="apning-rad">
-              <span class="apning-dag">${dag}</span>
-              <span class="${tid === "Stengt" ? "apning-stengt" : "apning-tid"}">${tid}</span>
-            </div>`).join("");
-        }
+      // ── Priser ────────────────────────────────────────────────────────────
+      const prisGrid = s("priser-grid");
+      if (prisGrid && cfg.priser && cfg.priser.length > 0) {
+        const halv = Math.ceil(cfg.priser.length / 2);
+        const lagRader = priser => priser.map(p => {
+          const deler = p.includes(":") ? p.split(":") : [p, ""];
+          const navn  = deler[0].trim();
+          const pris  = deler[1]?.trim() || "";
+          return `<div class="pris-rad"><span class="pris-navn">${e(navn)}</span><span class="pris-pris">${e(pris)}</span></div>`;
+        }).join("");
+        prisGrid.innerHTML =
+          `<div>${lagRader(cfg.priser.slice(0, halv))}</div>` +
+          `<div>${lagRader(cfg.priser.slice(halv))}</div>`;
       }
 
-      // Chat-vindu navn
-      document.querySelectorAll(".chat-bedrift-navn").forEach(el => el.textContent = cfg.bedrift + " AI");
+      // ── Åpningstider ──────────────────────────────────────────────────────
+      const apnWrap = s("apn-wrap");
+      if (apnWrap && cfg.apningstider) {
+        const rader = Object.entries(cfg.apningstider).map(([dag, tid]) =>
+          `<div class="apning-rad">
+            <span class="apning-dag">${e(dag)}</span>
+            <span class="${tid === "Stengt" ? "apning-stengt" : "apning-tid"}">${e(tid)}</span>
+          </div>`
+        ).join("");
+        apnWrap.innerHTML =
+          `<div class="apningstider-tittel">Åpningstider · Opening hours</div>${rader}`;
+      }
 
     } catch (err) {
-      console.error("Kunne ikke laste konfigurasjon:", err);
+      console.error("lastConfig feil:", err);
     }
   }
 
