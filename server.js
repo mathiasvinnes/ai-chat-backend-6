@@ -438,7 +438,16 @@ const rateLimitBook  = lagRateLimit(5,  "book:");   // 5 bookinger/min (separat)
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.get("/", corsPublic, (_req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  try {
+    let html = readFileSync(path.join(__dirname, "index.html"), "utf-8");
+    // Injiser config som inline JS – ingen fetch nødvendig
+    const configScript = `<script>window.SALONG_CONFIG = ${JSON.stringify(CONFIG)};</script>`;
+    html = html.replace("</head>", configScript + "\n</head>");
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
+  } catch (err) {
+    res.status(500).send("Feil ved lasting av nettside: " + err.message);
+  }
 });
 
 app.get("/chat", corsPublic, (_req, res) => {
@@ -509,11 +518,13 @@ app.get("/api/config", corsPublic, (_req, res) => {
     apningstider: CONFIG.apningstider || {},
     farge:        CONFIG.farge       || "#b8924a",
     bakgrunn:     CONFIG.bakgrunn    || "#f5f0e8",
-    usp:          CONFIG.usp         || [],      // Unique selling points
+    usp:          CONFIG.usp         || [],
     produkter:    CONFIG.produkter   || "",
     erfaringAar:  CONFIG.erfaringAar || "",
     ansatte:      CONFIG.ansatte     || "",
     kunder:       CONFIG.kunder      || "",
+    bildeHero:    CONFIG.bildeHero   || "",
+    bildeOm:      CONFIG.bildeOm     || "",
   });
 });
 
