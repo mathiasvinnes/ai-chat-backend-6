@@ -47,5 +47,16 @@
     "allergtest": "Vi anbefaler allergitest 48 timer før farging hvis du aldri har farget håret hos oss før.",
     "forberedelse": "Du trenger ikke forberede deg noe spesielt – bare møt opp med rent eller tørt hår.",
     "parkering_mc": "Det er også motorsykkelparkering rett ved inngangen."
-  }
+  },
+  "beskrivelse": "Eksklusiv frisørsalong i hjertet av Oslo – vi kombinerer håndverk med lidenskap.",
+  "usp": [
+    "Sertifiserte frisører med min. 3 års erfaring",
+    "AI-drevet booking – tilgjengelig 24/7",
+    "Fornøyd-garanti – gratis fikse innen 7 dager"
+  ],
+  "erfaringAar": "12+",
+  "ansatte": "5",
+  "kunder": "2000+",
+  "produkter": "",
+  "bakgrunn": "#f5f0e8"
 }
