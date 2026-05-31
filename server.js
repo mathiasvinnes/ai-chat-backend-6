@@ -495,6 +495,28 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", bedrift: CONFIG.bedrift });
 });
 
+// Offentlig config for nettsiden
+app.get("/api/config", corsPublic, (_req, res) => {
+  res.json({
+    bedrift:      CONFIG.bedrift     || "",
+    beskrivelse:  CONFIG.beskrivelse || "",
+    adresse:      CONFIG.adresse     || "",
+    telefon:      CONFIG.telefon     || "",
+    epost:        CONFIG.epost       || "",
+    bookinglink:  CONFIG.bookinglink || "",
+    tjenester:    CONFIG.tjenester   || [],
+    priser:       CONFIG.priser      || [],
+    apningstider: CONFIG.apningstider || {},
+    farge:        CONFIG.farge       || "#b8924a",
+    bakgrunn:     CONFIG.bakgrunn    || "#f5f0e8",
+    usp:          CONFIG.usp         || [],      // Unique selling points
+    produkter:    CONFIG.produkter   || "",
+    erfaringAar:  CONFIG.erfaringAar || "",
+    ansatte:      CONFIG.ansatte     || "",
+    kunder:       CONFIG.kunder      || "",
+  });
+});
+
 app.post("/chat", corsPublic, rateLimit, async (req, res) => {
   const { message, name, history = [] } = req.body;
 
