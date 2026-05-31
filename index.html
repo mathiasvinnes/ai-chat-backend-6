@@ -448,7 +448,7 @@
 
 <!-- NAV -->
 <nav id="navbar">
-  <a href="#hjem" class="nav-logo">Studio<span>·</span>Klipp</a>
+  <a href="#hjem" class="nav-logo"><span class="bedrift-navn">Studio Klipp</span></a>
   <div class="nav-links">
     <a href="#hjem" class="aktiv">Hjem / Home</a>
     <a href="#om">Om oss / About</a>
@@ -470,7 +470,7 @@
       Din hår<em>drøm</em><br>begynner her
     </h1>
     <p class="hero-tekst fade-in fade-in-3">
-      Hos Studio Klipp kombinerer vi håndverk med lidenskap. Hvert besøk er en opplevelse – skreddersydd for deg.
+      <span class="bedrift-beskrivelse">Hos Studio Klipp kombinerer vi håndverk med lidenskap.</span> Hvert besøk er en opplevelse – skreddersydd for deg.
       <br><br>
       <em style="font-style:italic;color:var(--ink-3)">At Studio Klipp, we combine craft with passion. Every visit is an experience tailored to you.</em>
     </p>
@@ -484,7 +484,7 @@
     <div class="hero-bilde-overlay"></div>
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="hero-stat-tall">12+</div>
+        <div class="hero-stat-tall" id="stat-erfaring">12+</div>
         <div class="hero-stat-label">Års erfaring</div>
       </div>
       <div class="hero-stat">
@@ -516,29 +516,17 @@
     <p class="seksjon-tekst fade-in fade-in-3" style="margin-top:16px;font-style:italic;color:var(--cream-3);font-size:13px;">
       Studio Klipp was founded with one idea: everyone deserves to feel great after a salon visit. We've gathered a team of skilled stylists with broad experience in cuts, color and treatments.
     </p>
-    <div class="om-features fade-in fade-in-4">
+    <div class="om-features fade-in fade-in-4" id="usp-wrap">
       <div class="om-feature">
         <div class="om-feature-ikon">✂️</div>
-        <div>
-          <div class="om-feature-tittel">Sertifiserte frisører</div>
-          <div class="om-feature-tekst">Alle med minimum 3 års faglig erfaring og løpende kursing.</div>
-        </div>
-      </div>
-      <div class="om-feature">
-        <div class="om-feature-ikon">🌿</div>
-        <div>
-          <div class="om-feature-tittel">Premium produkter</div>
-          <div class="om-feature-tekst">Vi bruker Wella og Redken – skånsomt mot håret, bra for miljøet.</div>
-        </div>
+        <div><div class="om-feature-tekst">Sertifiserte frisører med min. 3 års erfaring</div></div>
       </div>
       <div class="om-feature">
         <div class="om-feature-ikon">💬</div>
-        <div>
-          <div class="om-feature-tittel">AI-drevet booking</div>
-          <div class="om-feature-tekst">Chat direkte på nettsiden – svar og booking på sekunder, døgnet rundt.</div>
-        </div>
+        <div><div class="om-feature-tekst">AI-drevet booking – tilgjengelig 24/7</div></div>
       </div>
     </div>
+    <div id="om-produkter"></div>
   </div>
 </section>
 
@@ -549,7 +537,7 @@
     <h2 class="seksjon-tittel fade-in fade-in-2">Alt håret ditt trenger</h2>
     <p class="seksjon-tekst fade-in fade-in-3">Fra enkle klipp til avanserte farge­behandlinger – vi tilbyr et komplett utvalg av frisørtjenester.</p>
   </div>
-  <div class="tjenester-grid">
+  <div class="tjenester-grid" id="tjenester-grid">
     <div class="tjeneste-kort fade-in">
       <div class="tjeneste-nummer">01</div>
       <div class="tjeneste-navn">Herreklipp</div>
@@ -625,30 +613,31 @@
         <div class="kontakt-ikon">📍</div>
         <div>
           <div class="kontakt-label">Adresse</div>
-          <div class="kontakt-verdi">Storgata 12<br>0182 Oslo</div>
+          <div class="kontakt-verdi" id="info-adresse">Storgata 12<br>0182 Oslo</div>
         </div>
       </div>
       <div class="kontakt-item">
         <div class="kontakt-ikon">📞</div>
         <div>
           <div class="kontakt-label">Telefon</div>
-          <div class="kontakt-verdi">+47 22 33 44 55</div>
+          <div class="kontakt-verdi" id="info-telefon">+47 22 33 44 55</div>
         </div>
       </div>
       <div class="kontakt-item">
         <div class="kontakt-ikon">✉️</div>
         <div>
           <div class="kontakt-label">E-post</div>
-          <div class="kontakt-verdi">hei@studioklipp.no</div>
+          <div class="kontakt-verdi" id="info-epost">hei@studioklipp.no</div>
         </div>
       </div>
     </div>
-    <div class="apningstider fade-in fade-in-4">
+    <div class="apningstider fade-in fade-in-4" id="apn-wrap">
       <div class="apningstider-tittel">Åpningstider · Opening hours</div>
       <div class="apning-rad"><span class="apning-dag">Mandag – Onsdag</span><span class="apning-tid">10:00 – 20:00</span></div>
       <div class="apning-rad"><span class="apning-dag">Torsdag</span><span class="apning-tid">10:00 – 18:00</span></div>
       <div class="apning-rad"><span class="apning-dag">Fredag</span><span class="apning-tid">10:00 – 15:00</span></div>
       <div class="apning-rad"><span class="apning-dag">Lørdag – Søndag</span><span class="apning-tid apning-stengt">Stengt</span></div>
+      <!-- Åpningstider lastes dynamisk fra config -->
     </div>
   </div>
   <div class="fade-in fade-in-2">
@@ -670,7 +659,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo">Studio<span>·</span>Klipp</div>
+  <div class="footer-logo bedrift-navn">Studio Klipp</div>
   <div class="footer-tekst">© 2026 Studio Klipp. Alle rettigheter forbeholdt.</div>
   <div class="footer-lenker">
     <a href="#hjem">Hjem</a>
@@ -690,7 +679,7 @@
   <div class="chat-header">
     <div class="chat-header-avatar">✂️</div>
     <div class="chat-header-info">
-      <div class="chat-header-navn">Studio Klipp AI</div>
+      <div class="chat-header-navn chat-bedrift-navn">Studio Klipp AI</div>
       <div class="chat-header-status">
         <div class="status-dot"></div>
         Alltid tilgjengelig · Always available
@@ -714,7 +703,110 @@
 </div>
 
 <script>
-  const CHAT_API = "https://ai-chat-backend-6.onrender.com/chat";
+  const BASE_URL = "https://ai-chat-backend-6.onrender.com";
+  const CHAT_API = BASE_URL + "/chat";
+
+  // Last inn config dynamisk fra serveren – prøver på nytt hvis server sover
+  async function lastConfig(forsok = 0) {
+    try {
+      const res = await fetch(BASE_URL + "/api/config");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const cfg = await res.json();
+
+      // Navn
+      document.querySelectorAll(".bedrift-navn").forEach(el => el.textContent = cfg.bedrift);
+      document.title = cfg.bedrift + " – Frisørsalong";
+
+      // Farger
+      if (cfg.farge) {
+        document.documentElement.style.setProperty("--gold", cfg.farge);
+      }
+      if (cfg.bakgrunn) {
+        document.documentElement.style.setProperty("--cream", cfg.bakgrunn);
+      }
+
+      // Beskrivelse
+      if (cfg.beskrivelse) {
+        document.querySelectorAll(".bedrift-beskrivelse").forEach(el => el.textContent = cfg.beskrivelse);
+      }
+
+      // Stats (erfaring, ansatte, kunder)
+      if (cfg.erfaringAar) document.getElementById("stat-erfaring").textContent = cfg.erfaringAar;
+      if (cfg.ansatte)     document.getElementById("stat-ansatte").textContent  = cfg.ansatte;
+      if (cfg.kunder)      document.getElementById("stat-kunder").textContent   = cfg.kunder;
+
+      // Kontaktinfo
+      if (cfg.adresse)  document.getElementById("info-adresse").innerHTML  = cfg.adresse.replace(", ", "<br>");
+      if (cfg.telefon)  document.getElementById("info-telefon").textContent = cfg.telefon;
+      if (cfg.epost)    document.getElementById("info-epost").textContent   = cfg.epost;
+
+      // USP-seksjonen
+      if (cfg.usp && cfg.usp.length > 0) {
+        const uspWrap = document.getElementById("usp-wrap");
+        if (uspWrap) {
+          uspWrap.innerHTML = cfg.usp.map(u => `
+            <div class="om-feature">
+              <div class="om-feature-ikon">✨</div>
+              <div><div class="om-feature-tekst">${u}</div></div>
+            </div>`).join("");
+        }
+      }
+
+      // Produkter (vis kun hvis fylt inn)
+      const produktEl = document.getElementById("om-produkter");
+      if (produktEl) {
+        if (cfg.produkter) {
+          produktEl.innerHTML = `<div class="om-feature">
+            <div class="om-feature-ikon">🌿</div>
+            <div>
+              <div class="om-feature-tittel">Premium produkter</div>
+              <div class="om-feature-tekst">Vi bruker ${cfg.produkter} – skånsomt mot håret, bra for miljøet.</div>
+            </div>
+          </div>`;
+        } else {
+          produktEl.style.display = "none";
+        }
+      }
+
+      // Tjenester
+      if (cfg.tjenester && cfg.tjenester.length > 0) {
+        const grid = document.getElementById("tjenester-grid");
+        if (grid) {
+          grid.innerHTML = cfg.tjenester.map((t, i) => `
+            <div class="tjeneste-kort fade-in">
+              <div class="tjeneste-nummer">0${i+1}</div>
+              <div class="tjeneste-navn">${t}</div>
+              <div class="tjeneste-pris">${cfg.priser?.[i] || ""}</div>
+            </div>`).join("");
+        }
+      }
+
+      // Åpningstider
+      if (cfg.apningstider) {
+        const apnWrap = document.getElementById("apn-wrap");
+        if (apnWrap) {
+          apnWrap.innerHTML = Object.entries(cfg.apningstider).map(([dag, tid]) => `
+            <div class="apning-rad">
+              <span class="apning-dag">${dag}</span>
+              <span class="${tid === "Stengt" ? "apning-stengt" : "apning-tid"}">${tid}</span>
+            </div>`).join("");
+        }
+      }
+
+      // Chat-vindu navn
+      document.querySelectorAll(".chat-bedrift-navn").forEach(el => el.textContent = cfg.bedrift + " AI");
+
+    } catch (err) {
+      if (forsok < 5) {
+        console.log(`[Config] Prøver igjen om 3 sek... (forsøk ${forsok + 1})`);
+        setTimeout(() => lastConfig(forsok + 1), 3000);
+      } else {
+        console.error("Kunne ikke laste konfigurasjon:", err);
+      }
+    }
+  }
+
+  lastConfig();
   let chatHistory = [];
   let chatApen = false;
 
