@@ -235,7 +235,7 @@ async function hentLedigeTider(onsketDag = null, onsketTid = null) {
       if (onsketTid && dagFiltrert.length > 0) {
         const match = dagFiltrert.find(t => {
           const d = new Date(t.tid);
-          const h = parseInt(d.toLocaleString("no-NO", { hour: "numeric", timeZone: "Europe/Oslo" }));
+          const h = parseInt(d.toLocaleString("no-NO", { hour: "2-digit", timeZone: "Europe/Oslo" }));
           const m = d.getMinutes();
           return h === onsketTid.timer && m === onsketTid.min;
         });
@@ -332,8 +332,9 @@ async function opprettBooking({ navn, epost, tid }) {
 // ── SendGrid e-post ───────────────────────────────────────────────────────────
 
 const SENDGRID_KEY = process.env.SENDGRID_KEY;
-const EPOST_FRA    = "mathias.s.vinnes@gmail.com";
-const EPOST_TIL    = "asiakimchi25@gmail.com";
+// Hent e-poster fra config slik at nye salonger får varsler til riktig adresse
+const EPOST_FRA = process.env.EPOST_FRA || "mathias.s.vinnes@gmail.com"; // SendGrid verified sender
+const EPOST_TIL = CONFIG.epost || process.env.EPOST_TIL || "mathias.s.vinnes@gmail.com";
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -586,8 +587,13 @@ app.post("/chat", corsPublic, rateLimit, async (req, res) => {
       return res.status(502).json({ reply: "Kunne ikke na AI-tjenesten. Prov igjen." });
     }
 
-    const data     = await openaiRes.json();
-    const rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
+    let data, rawReply;
+    try {
+      data     = await openaiRes.json();
+      rawReply = data.choices?.[0]?.message?.content?.trim() ?? "Beklager, noe gikk galt.";
+    } catch (_) {
+      return res.status(502).json({ reply: "Fikk ugyldig svar fra AI. Prøv igjen." });
+    }
 
     const hasBookTag = rawReply.includes("[BOOK]");
     const reply      = rawReply.replace(/\[BOOK\]/g, "").trim();
@@ -598,8 +604,11 @@ app.post("/chat", corsPublic, rateLimit, async (req, res) => {
     if (!safeName && message.trim().split(" ").length <= 4 && message.trim().length <= 40) {
       // Enkel heuristikk: kort melding uten spørsmålstegn = sannsynlig navn
       const ingenSpm = !message.includes("?") && !message.includes("!");
-      const ingenKw  = !["er", "har", "kan", "vil", "hva", "når", "hvor", "how", "what", "when"].some(w => message.toLowerCase().startsWith(w));
-      if (ingenSpm && ingenKw) {
+      const ingenKw  = !["er", "har", "kan", "vil", "hva", "når", "hvor", "how", "what", "when",
+                          "ok", "ja", "nei", "hei", "hallo", "heisann", "takk", "super",
+                          "greit", "bra", "flott", "yes", "no", "sure", "great"].some(w => message.toLowerCase().startsWith(w));
+      const ingenKortSvar = !["ok", "ja", "nei", "hei", "takk", "greit", "bra", "flott", "yes", "no"].includes(message.toLowerCase().trim());
+      if (ingenSpm && ingenKw && ingenKortSvar) {
         // Normaliser: stor forbokstav, trim
         detektertNavn = message.trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
       }
@@ -657,15 +666,21 @@ app.post("/book", corsPublic, rateLimitBook, async (req, res) => {
   }
   // Valider at tid er en gyldig ISO 8601-streng og i fremtiden
   const tidDato = new Date(tid);
-  if (isNaN(tidDato.getTime()) || tidDato < new Date()) {
+  if (isNaN(tidDato.getTime()) || tidDato < new Date(Date.now() - 30_000)) {
     return res.status(400).json({ ok: false, feil: "Ugyldig eller passert tidspunkt." });
   }
 
-  const resultat = await opprettBooking({
-    navn: navn.slice(0, 100),
-    epost: epost.slice(0, 200),
-    tid
-  });
+  let resultat;
+  try {
+    resultat = await opprettBooking({
+      navn: navn.slice(0, 100),
+      epost: epost.slice(0, 200),
+      tid
+    });
+  } catch (err) {
+    console.error("[BOOK] Uventet feil:", err.message);
+    return res.status(500).json({ ok: false, feil: "Serverfeil ved booking. Prøv igjen." });
+  }
 
   if (!resultat.ok) {
     return res.status(502).json({ ok: false, feil: resultat.feil });
@@ -813,6 +828,7 @@ app.post("/provision", corsPrivat, async (req, res) => {
         envVars: [
           { key: "OPENAI_API_KEY",    value: process.env.OPENAI_API_KEY || "" },
           { key: "CAL_API_KEY",       value: process.env.CAL_API_KEY    || "" },
+          { key: "EPOST_FRA",         value: process.env.EPOST_FRA      || "mathias.s.vinnes@gmail.com" },
           { key: "CAL_EVENT_TYPE_ID", value: String(konfig.calEventId || process.env.CAL_EVENT_TYPE_ID || "") },
           { key: "SUPABASE_URL",      value: process.env.SUPABASE_URL   || "" },
           { key: "SUPABASE_KEY",      value: process.env.SUPABASE_KEY   || "" },
@@ -846,9 +862,9 @@ app.post("/provision", corsPrivat, async (req, res) => {
 
     console.log(`[PROVISION] Ny salong opprettet: ${konfig.bedrift} → ${serviceUrl}`);
 
-    // 4. Send velkomstepost via SendGrid
+    // 4. Send velkomstepost via SendGrid – asynkront, blokkerer ikke svaret
     if (process.env.SENDGRID_KEY) {
-      await fetch("https://api.sendgrid.com/v3/mail/send", {
+      fetch("https://api.sendgrid.com/v3/mail/send", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${process.env.SENDGRID_KEY}`,
