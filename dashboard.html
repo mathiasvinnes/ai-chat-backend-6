@@ -418,7 +418,7 @@
     const btn = document.getElementById("glemt-btn");
     settLaster(btn, "Sender...", true);
     const { error } = await sb.auth.resetPasswordForEmail(epost, {
-      redirectTo: "https://ai-chat-backend-6.onrender.com/dashboard"
+      redirectTo: window.location.origin + "/dashboard"
     });
     settLaster(btn, "", false);
     if (error) { visFeil("Kunne ikke sende e-post. Sjekk adressen og prøv igjen."); }
