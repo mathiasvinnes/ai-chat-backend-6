@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Studio Klipp – AI-assistent</title>
+  <title>AI-assistent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -415,14 +415,14 @@
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="brand-tag">Frisørsalong</div>
-        <div class="brand-name">Studio Klipp</div>
+        <div class="brand-name" id="brand-name">AI-assistent</div>
         <div class="brand-sub">AI-assistent for prisforespørsler, booking og kundespørsmål.</div>
       </div>
 
       <div class="sidebar-fields">
         <div>
           <div class="field-label">Bedrift</div>
-          <input class="field-input" id="business" type="text" value="Studio Klipp" />
+          <input class="field-input" id="business" type="text" placeholder="Firmanavn" />
         </div>
         <div>
           <div class="field-label">Ditt navn</div>
@@ -463,7 +463,7 @@
       <div class="messages" id="messages">
         <div class="message-row">
           <div class="avatar bot">SK</div>
-          <div class="bubble bot">Hei! Jeg er den automatiske assistenten til Studio Klipp. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!</div>
+          <div class="bubble bot" id="velkomst-boble">Hei! Jeg er her for å hjelpe deg. Spør meg om priser, tjenester eller booking!</div>
         </div>
       </div>
 
@@ -486,7 +486,7 @@
   <script>
     // ─── Config ─────────────────────────────────────────────────────────────
     // Sett denne til Render-endpointen din, f.eks. https://din-app.onrender.com/chat
-    const CHAT_API_URL = "https://ai-chat-backend-6.onrender.com/chat";
+    const CHAT_API_URL = window.location.origin + "/chat";
 
     // ─── Vekk serveren ved sidelast (Render free tier spinner) ───────────────
     fetch(CHAT_API_URL.replace('/chat', '/health')).catch(() => {});
@@ -690,7 +690,7 @@
       const name         = nameInput.value.trim();
       const email        = emailInput.value.trim();
       const phone        = phoneInput.value.trim();
-      const businessName = businessInput.value.trim() || 'Studio Klipp';
+      const businessName = businessInput.value.trim() || BEDRIFT_NAVN;
 
       if (!message) return;
 
@@ -765,12 +765,33 @@
     }
 
     // ─── Clear ───────────────────────────────────────────────────────────────
+    // Hent bedriftsnavn dynamisk fra serveren
+    let BEDRIFT_NAVN = "Salongen";
+    fetch(window.location.origin + "/health")
+      .then(r => r.json())
+      .then(d => {
+        BEDRIFT_NAVN = d.bedrift || "Salongen";
+        const initials = BEDRIFT_NAVN.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase();
+        // Oppdater alle steder med bedriftsnavn
+        document.querySelectorAll(".avatar.bot").forEach(el => el.textContent = initials);
+        const brandEl   = document.getElementById("brand-name");
+        if (brandEl)   brandEl.textContent = BEDRIFT_NAVN;
+        const velkomst = document.getElementById("velkomst-boble");
+        if (velkomst)  velkomst.textContent = `Hei! Jeg er den automatiske assistenten til ${BEDRIFT_NAVN}. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!`;
+        document.title = BEDRIFT_NAVN + " – AI-assistent";
+        // Fyll inn business-feltet hvis tomt
+        const bizInput = document.getElementById("business");
+        if (bizInput && !bizInput.value) bizInput.placeholder = BEDRIFT_NAVN;
+      })
+      .catch(() => {});
+
     function clearChat() {
       history = [];
+      const initials = BEDRIFT_NAVN.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase();
       messagesEl.innerHTML = `
         <div class="message-row">
-          <div class="avatar bot">SK</div>
-          <div class="bubble bot">Hei! Jeg er den automatiske assistenten til Studio Klipp. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!</div>
+          <div class="avatar bot">${initials}</div>
+          <div class="bubble bot">Hei! Jeg er den automatiske assistenten til ${BEDRIFT_NAVN}. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!</div>
         </div>`;
       statusEl.innerHTML = '';
       messageInput.value = '';
