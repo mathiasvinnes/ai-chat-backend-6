@@ -697,17 +697,35 @@
   const BASE_URL = "https://ai-chat-backend-6.onrender.com";
   const CHAT_API = BASE_URL + "/chat";
 
-  // Config er injisert server-side – ingen fetch nødvendig
+  // ── Config: server injiserer window.SALONG_CONFIG, fallback til /api/config ──
+  async function hentConfig() {
+    // 1. Prøv server-injisert config først (fungerer på Render)
+    if (window.SALONG_CONFIG && window.SALONG_CONFIG.bedrift) {
+      lastConfig(window.SALONG_CONFIG);
+      return;
+    }
+    // 2. Fallback: hent fra API (fungerer ved direkte filåpning eller caching)
+    try {
+      const res = await fetch(BASE_URL + "/api/config");
+      if (res.ok) {
+        const cfg = await res.json();
+        lastConfig(cfg);
+        return;
+      }
+    } catch (_) {}
+    // 3. Siste fallback: bruk hardkodede standardverdier
+    lastConfig({});
+  }
+
   function e(str) {
     return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
 
   function s(id) { return document.getElementById(id); }
 
-  function lastConfig() {
+  function lastConfig(cfg) {
     try {
-      const cfg = window.SALONG_CONFIG || {};
-      if (!cfg.bedrift) { console.warn("SALONG_CONFIG mangler"); return; }
+      if (!cfg) cfg = {};
 
       // ── Navn ──────────────────────────────────────────────────────────────
       document.querySelectorAll(".bedrift-navn").forEach(el => el.textContent = cfg.bedrift);
@@ -839,7 +857,7 @@
     }
   }
 
-  lastConfig();
+  hentConfig();
   let chatHistory = [];
   let chatApen = false;
 
