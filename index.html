@@ -267,7 +267,7 @@
     }
     .apning-dag { color: var(--ink-3); font-weight: 400; }
     .apning-tid { color: var(--ink); font-weight: 500; }
-    .apning-stengt { color: var(--cream-3); }
+    .apning-stengt { color: #7a7060; font-style: italic; }
     .kontakt-kart {
       background: var(--cream-3); border-radius: 4px;
       height: 300px; display: flex; align-items: center;
@@ -332,7 +332,7 @@
     @keyframes slideOpp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform:none; } }
     #chat-vindu.vis { display: flex; }
     .chat-header {
-      background: var(--ink); padding: 16px 20px;
+      background: #1a1510; padding: 16px 20px;
       display: flex; align-items: center; gap: 12px;
     }
     .chat-header-avatar {
@@ -362,54 +362,57 @@
     .chat-meldinger {
       flex: 1; overflow-y: auto; padding: 16px;
       display: flex; flex-direction: column; gap: 12px;
-      background: var(--cream);
+      background: #f5f0e8; /* Alltid lys – uavhengig av sidefarge */
     }
     .chat-boble-wrap { display: flex; gap: 8px; align-items: flex-end; }
     .chat-boble-wrap.kunde { flex-direction: row-reverse; }
     .chat-mini-avatar {
       width: 24px; height: 24px; border-radius: 50%;
-      background: var(--cream-3); display: flex; align-items: center;
+      background: #e4ddd1; display: flex; align-items: center;
       justify-content: center; font-size: 11px; flex-shrink: 0;
     }
-    .chat-mini-avatar.bot { background: var(--ink); color: var(--white); }
+    .chat-mini-avatar.bot { background: #1a1510; color: #ffffff; }
     .chat-boble {
       max-width: 75%; padding: 10px 14px; border-radius: 14px;
       font-size: 13.5px; line-height: 1.5; font-family: 'Jost', sans-serif;
     }
-    .chat-boble.bot { background: var(--white); color: var(--ink); border-bottom-left-radius: 4px; }
+    .chat-boble.bot { background: #ffffff; color: #1a1510; border-bottom-left-radius: 4px; }
     .chat-boble.kunde {
-      background: var(--ink); color: var(--white);
+      background: #1a1510; color: #ffffff;
       border-bottom-right-radius: 4px;
     }
     .chat-ledig-btn {
-      background: var(--white); border: 1px solid var(--cream-3);
+      background: #ffffff; border: 1px solid #e4ddd1;
       border-radius: 8px; padding: 9px 14px;
       font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500;
       cursor: pointer; text-align: left; transition: background 0.15s;
-      color: var(--ink); margin-top: 4px;
+      color: #1a1510; margin-top: 4px;
     }
-    .chat-ledig-btn:hover { background: var(--cream-2); }
+    .chat-ledig-btn:hover { background: #ede8df; }
     .chat-input-wrap {
-      padding: 12px 16px; background: var(--white);
-      border-top: 1px solid var(--cream-3);
+      padding: 12px 16px; background: #ffffff;
+      border-top: 1px solid #e4ddd1;
       display: flex; gap: 10px; align-items: center;
     }
     .chat-input {
-      flex: 1; border: 1px solid var(--cream-3); border-radius: 8px;
+      flex: 1; border: 1.5px solid #e4ddd1; border-radius: 8px;
       padding: 10px 14px; font-family: 'Jost', sans-serif; font-size: 13.5px;
-      background: var(--cream); color: var(--ink); resize: none;
+      background: #f5f0e8; color: #1a1510; resize: none;
       outline: none; transition: border-color 0.2s;
     }
-    .chat-input:focus { border-color: var(--gold); }
+    .chat-input::placeholder { color: #7a7060; }
+    .chat-input:focus { border-color: var(--gold); background: #ffffff; }
+    .chat-input:disabled { opacity: 0.5; }
     .chat-send {
       width: 36px; height: 36px; border-radius: 50%;
       background: var(--gold); border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; color: var(--white);
-      transition: background 0.2s, transform 0.15s;
-      flex-shrink: 0;
+      font-size: 15px; color: #ffffff;
+      transition: opacity 0.2s, transform 0.15s;
+      flex-shrink: 0; min-width: 36px;
     }
-    .chat-send:hover { background: var(--gold-dark); transform: scale(1.05); }
+    .chat-send:hover { opacity: 0.85; transform: scale(1.05); }
+    .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
     .typing-dot { display: inline-flex; gap: 3px; padding: 4px 0; }
     .typing-dot span {
       width: 5px; height: 5px; border-radius: 50%;
@@ -744,7 +747,8 @@
         const mork = "#" + rgb.map(c => Math.max(0, c-40).toString(16).padStart(2,"0")).join("");
         r.style.setProperty("--gold-light", lys + "40");
         r.style.setProperty("--gold-dark",  mork);
-        document.querySelectorAll(".knapp-prim, .nav-book, .chat-send, #chat-fab").forEach(el => {
+        // Oppdater primærknapper (ikke chat-send – den styres av CSS-variabel)
+        document.querySelectorAll(".knapp-prim, .nav-book, #chat-fab").forEach(el => {
           el.style.background = cfg.farge;
         });
       }
