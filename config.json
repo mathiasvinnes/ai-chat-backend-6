@@ -4,17 +4,19 @@
   "velkomst": "Hei! Jeg er den automatiske assistenten til Studio Klipp. Spør meg om priser, behandlinger eller booking – jeg hjelper deg gjerne!",
   "priser": [
     "Herreklipp: 350 kr",
-    "Dameklipp: 550 kr",
-    "Skjegg: 200 kr",
-    "Farge (kort hår): 800 kr",
-    "Farge (langt hår): 1200 kr"
+    "Dameklipp: fra 550 kr",
+    "Barneklipp: 250 kr",
+    "Farge: fra 800 kr",
+    "Behandling: fra 400 kr",
+    "Gavekort: Valgfritt beløp"
   ],
   "tjenester": [
-    "Klipp",
+    "Herreklipp",
+    "Dameklipp",
+    "Barneklipp",
     "Farge",
-    "Skjegg",
     "Behandling",
-    "Styling"
+    "Gavekort"
   ],
   "apningstider": {
     "Mandag": "10:00 - 18:00",
@@ -25,9 +27,9 @@
     "Lordag": "10:00 - 15:00",
     "Sondag": "Stengt"
   },
-  "bookinglink": "https://timma.no/studio-klipp",
-  "telefon": "+47 123 45 678",
-  "adresse": "Storgata 1, 0123 Oslo",
+  "bookinglink": "https://cal.eu/mathias-vinnes-0c4tfq/frisørtime",
+  "telefon": "+47 22 33 44 55",
+  "adresse": "Storgata 12, 0182 Oslo",
   "epost": "hei@studioklipp.no",
   "tone": "vennlig og profesjonell",
   "sprakOgLand": "norsk",
@@ -58,5 +60,8 @@
   "ansatte": "5",
   "kunder": "2000+",
   "produkter": "",
-  "bakgrunn": "#f5f0e8"
+  "bakgrunn": "#f5f0e8",
+  "farge": "#b8924a",
+  "bildeHero": "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80",
+  "bildeOm": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=700&q=80"
 }
