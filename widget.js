@@ -1,8 +1,8 @@
 (function () {
   // ── Konfigurasjon ──────────────────────────────────────────────────────────
   var CONFIG = {
-    apiUrl:      "https://ai-chat-backend-6.onrender.com/chat",
-    healthUrl:   "https://ai-chat-backend-6.onrender.com/health",
+    apiUrl:      window.location.origin + "/chat",
+    healthUrl:   window.location.origin + "/health",
     bedrift:     "Studio Klipp",
     velkomst:    "Hei! Jeg er den automatiske assistenten. Spør meg om priser, behandlinger eller booking.",
     farge:       "#0d0d0d",      // hovedfarge (boble og header)
