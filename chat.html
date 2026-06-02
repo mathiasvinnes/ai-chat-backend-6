@@ -485,11 +485,26 @@
 
   <script>
     // ─── Config ─────────────────────────────────────────────────────────────
-    // Sett denne til Render-endpointen din, f.eks. https://din-app.onrender.com/chat
-    const CHAT_API_URL = window.location.origin + "/chat";
+    // Multi-tenant: utled hvilken salong dette gjelder fra ?salong= eller subdomene.
+    function hentSlug() {
+      const p = new URLSearchParams(window.location.search).get("salong");
+      if (p) return p;
+      // Subdomene: kunde.ai-salong.no → "kunde"
+      const vert = window.location.hostname.split(".");
+      if (vert.length > 2 && vert[0] !== "www") return vert[0];
+      return "";
+    }
+    const SALONG_SLUG = hentSlug();
+    // Legg slug på alle API-kall slik at serveren vet hvilken salong det gjelder
+    function medSlug(sti) {
+      if (!SALONG_SLUG) return window.location.origin + sti;
+      const skille = sti.includes("?") ? "&" : "?";
+      return window.location.origin + sti + skille + "salong=" + encodeURIComponent(SALONG_SLUG);
+    }
+    const CHAT_API_URL = medSlug("/chat");
 
     // ─── Vekk serveren ved sidelast (Render free tier spinner) ───────────────
-    fetch(CHAT_API_URL.replace('/chat', '/health')).catch(() => {});
+    fetch(medSlug("/health")).catch(() => {});
 
     // ─── State ──────────────────────────────────────────────────────────────
     let history = []; // conversation history for multi-turn context
@@ -563,7 +578,7 @@
       setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 150);
     }
 
-    const BOOK_API_URL = CHAT_API_URL.replace('/chat', '/book');
+    const BOOK_API_URL = medSlug("/book");
 
     function visLedigeTider(tider) {
       const wrap = document.createElement('div');
@@ -767,7 +782,7 @@
     // ─── Clear ───────────────────────────────────────────────────────────────
     // Hent bedriftsnavn dynamisk fra serveren
     let BEDRIFT_NAVN = "Salongen";
-    fetch(window.location.origin + "/health")
+    fetch(medSlug("/health"))
       .then(r => r.json())
       .then(d => {
         BEDRIFT_NAVN = d.bedrift || "Salongen";
