@@ -1,0 +1,48 @@
+-- ════════════════════════════════════════════════════════════════════════════
+--  SUPABASE-SKJEMA for multi-tenant AI-salong
+--  Kjør dette ÉN gang i Supabase: Dashboard → SQL Editor → lim inn → Run.
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- ── Tabell: salonger ──────────────────────────────────────────────────────────
+-- Én rad per salong. `config` (jsonb) inneholder hele salong-konfigurasjonen
+-- (bedrift, priser, tjenester, apningstider, farger, faq osv.).
+create table if not exists salonger (
+  id           bigint generated always as identity primary key,
+  slug         text unique not null,
+  bedrift      text not null,
+  nokkel       text unique not null,        -- dashboard-nøkkel (generert av /provision)
+  aktiv        boolean not null default true,
+  cal_event_id bigint default 0,
+  cal_api_key  text default '',
+  config       jsonb not null default '{}'::jsonb,
+  opprettet    timestamptz not null default now()
+);
+
+-- Rask oppslag på slug og e-post (e-post ligger inne i config)
+create index if not exists salonger_slug_idx   on salonger (slug);
+create index if not exists salonger_epost_idx  on salonger ((config->>'epost'));
+
+-- ── Tabell: samtaler ──────────────────────────────────────────────────────────
+-- Én rad per chat-utveksling. `slug` knytter samtalen til riktig salong.
+create table if not exists samtaler (
+  id           bigint generated always as identity primary key,
+  slug         text not null,
+  bedrift      text,
+  navn         text,
+  melding      text,
+  svar         text,
+  booking_vist boolean default false,
+  opprettet    timestamptz not null default now()
+);
+
+create index if not exists samtaler_slug_idx      on samtaler (slug);
+create index if not exists samtaler_opprettet_idx on samtaler (opprettet desc);
+
+-- ── Row Level Security ────────────────────────────────────────────────────────
+-- Serveren bruker service_role-nøkkelen (SUPABASE_KEY) som omgår RLS.
+-- Vi slår PÅ RLS og lager INGEN åpne policies, slik at anon-nøkkelen ikke kan
+-- lese data direkte fra nettleseren. All tilgang går gjennom serveren.
+alter table salonger enable row level security;
+alter table samtaler enable row level security;
+
+-- (Ingen policies = ingen tilgang for anon/authenticated. Kun service_role slipper inn.)
