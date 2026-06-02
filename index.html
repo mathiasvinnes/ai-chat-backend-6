@@ -240,8 +240,12 @@
     /* ── KONTAKT ── */
     #kontakt {
       display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
-      align-items: start; background: var(--cream-2);
+      align-items: start; background: #ede8df; /* Hardkodet lys bakgrunn */
     }
+    #kontakt .seksjon-over  { color: #b8924a; }
+    #kontakt .seksjon-tittel { color: #1a1510; }
+    #kontakt .kontakt-label { color: #b8924a; }
+    #kontakt .kontakt-verdi { color: #3d3530; }
     .kontakt-info { display: flex; flex-direction: column; gap: 32px; margin-top: 40px; }
     .kontakt-item { display: flex; gap: 16px; }
     .kontakt-ikon {
@@ -257,19 +261,19 @@
     .apningstider { margin-top: 48px; }
     .apningstider-tittel {
       font-size: 11px; font-weight: 500; letter-spacing: 0.15em;
-      text-transform: uppercase; color: var(--ink-3);
+      text-transform: uppercase; color: #7a7060;
       margin-bottom: 20px;
     }
     .apning-rad {
       display: flex; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid var(--cream-3);
+      padding: 10px 0; border-bottom: 1px solid #e4ddd1;
       font-size: 14px;
     }
-    .apning-dag { color: var(--ink-3); font-weight: 400; }
-    .apning-tid { color: var(--ink); font-weight: 500; }
+    .apning-dag { color: #7a7060; font-weight: 400; }
+    .apning-tid { color: #1a1510; font-weight: 500; }
     .apning-stengt { color: #7a7060; font-style: italic; }
     .kontakt-kart {
-      background: var(--cream-3); border-radius: 4px;
+      background: #e4ddd1; border-radius: 4px;
       height: 300px; display: flex; align-items: center;
       justify-content: center; color: var(--ink-3);
       font-size: 14px; margin-top: 32px;
@@ -698,7 +702,21 @@
 
 <script>
   const BASE_URL = window.location.origin;
-  const CHAT_API = BASE_URL + "/chat";
+  // Multi-tenant: utled salong-slug og legg på alle API-kall.
+  function hentSlug() {
+    const p = new URLSearchParams(window.location.search).get("salong");
+    if (p) return p;
+    const vert = window.location.hostname.split(".");
+    if (vert.length > 2 && vert[0] !== "www") return vert[0];
+    return (window.SALONG_CONFIG && window.SALONG_CONFIG.slug) || "";
+  }
+  const SALONG_SLUG = hentSlug();
+  function medSlug(sti) {
+    if (!SALONG_SLUG) return BASE_URL + sti;
+    const skille = sti.includes("?") ? "&" : "?";
+    return BASE_URL + sti + skille + "salong=" + encodeURIComponent(SALONG_SLUG);
+  }
+  const CHAT_API = medSlug("/chat");
 
   // ── Config: server injiserer window.SALONG_CONFIG, fallback til /api/config ──
   async function hentConfig() {
@@ -709,7 +727,7 @@
     }
     // 2. Fallback: hent fra API (fungerer ved direkte filåpning eller caching)
     try {
-      const res = await fetch(BASE_URL + "/api/config");
+      const res = await fetch(medSlug("/api/config"));
       if (res.ok) {
         const cfg = await res.json();
         lastConfig(cfg);
@@ -762,6 +780,26 @@
         r.style.setProperty("--cream-2", m1);
         r.style.setProperty("--cream-3", m2);
         document.body.style.background = cfg.bakgrunn;
+
+        // Kontrastvern: hvis salongen velger en mørk bakgrunn, inverter tekstfargene
+        // slik at mørk-på-mørk ikke gjør teksten uleselig. Bruker relativ luminans (WCAG).
+        const lin = c => { c /= 255; return c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4); };
+        const lum = 0.2126*lin(rgb[0]) + 0.7152*lin(rgb[1]) + 0.0722*lin(rgb[2]);
+        if (lum < 0.4) {
+          // Mørk bakgrunn → lyse tekstfarger
+          r.style.setProperty("--ink",   "#f5f0e8");
+          r.style.setProperty("--ink-2", "#d8d0c4");
+          r.style.setProperty("--ink-3", "#a89e90");
+          r.style.setProperty("--white", "#1a1510");
+          document.body.style.color = "#f5f0e8";
+          // Seksjoner med egne hardkodede lyse bakgrunner må også snus
+          document.querySelectorAll("#kontakt").forEach(el => {
+            el.style.background = m1;
+          });
+          document.querySelectorAll(
+            "#kontakt .seksjon-tittel, .apning-dag, .apning-tid, .apning-stengt, .kontakt-verdi"
+          ).forEach(el => { el.style.color = "#f5f0e8"; });
+        }
       }
 
       // ── Bilder ────────────────────────────────────────────────────────────
@@ -900,31 +938,88 @@
     return wrap;
   }
 
+  const BOOK_API = medSlug("/book");
+
   function visLedigeTider(tider) {
     const meldinger = document.getElementById("chat-meldinger");
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
     tider.forEach(t => {
       const btn = document.createElement("button");
       btn.className = "chat-ledig-btn";
       btn.textContent = t.visning;
-      btn.onclick = () => {
-        tider.forEach(() => {}); // deaktiver andre
-        btn.style.background = "#b8924a"; btn.style.color = "#fff";
-        leggTilMelding("user", t.visning);
-        leggTilMelding("bot", "Flott! For å fullføre bookingen, klikk knappen nedenfor 👇");
-        const a = document.createElement("a");
-        a.href = t.url || (window.SALONG_CONFIG && window.SALONG_CONFIG.bookinglink) || "";
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.className = "chat-ledig-btn";
-        a.style.display = "block";
-        a.style.textAlign = "center";
-        a.textContent = "✅ Bekreft booking på Cal.com";
-        meldinger.appendChild(a);
-        meldinger.scrollTop = 9999;
-      };
-      meldinger.appendChild(btn);
+      btn.onclick = () => startBooking(t, wrap, meldinger);
+      wrap.appendChild(btn);
     });
+    meldinger.appendChild(wrap);
     meldinger.scrollTop = 9999;
+  }
+
+  function startBooking(t, slotWrap, meldinger) {
+    slotWrap.querySelectorAll("button").forEach(b => { b.disabled = true; b.style.opacity = "0.4"; });
+    leggTilMelding("user", t.visning);
+    const form = document.createElement("div");
+    form.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:6px;";
+    const navnFelt  = document.createElement("input");
+    navnFelt.placeholder = "Navn";
+    navnFelt.style.cssText = "border:1px solid #ddd;border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;";
+    const epostFelt = document.createElement("input");
+    epostFelt.type = "email"; epostFelt.placeholder = "E-post";
+    epostFelt.style.cssText = navnFelt.style.cssText;
+    const bekreft = document.createElement("button");
+    bekreft.className = "chat-ledig-btn";
+    bekreft.textContent = "Bekreft booking";
+    bekreft.style.cssText = "background:#b8924a;color:#fff;";
+    form.append(navnFelt, epostFelt, bekreft);
+    meldinger.appendChild(form);
+    meldinger.scrollTop = 9999;
+    navnFelt.focus();
+
+    bekreft.onclick = async () => {
+      const navn = navnFelt.value.trim();
+      const epost = epostFelt.value.trim();
+      if (!navn || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) {
+        if (!navn) navnFelt.style.borderColor = "#e05";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) epostFelt.style.borderColor = "#e05";
+        return;
+      }
+      bekreft.disabled = true; bekreft.textContent = "Booker...";
+      try {
+        const res = await fetch(BOOK_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ navn, epost, tid: t.tid })
+        });
+        const data = await res.json();
+        form.remove();
+        if (data.ok) {
+          leggTilMelding("bot", `✅ Time booket! Bekreftelse er sendt til ${epost}. Vi sees ${t.visning}! 🎉`);
+        } else {
+          leggTilMelding("bot", `Noe gikk galt: ${data.feil || "prøv igjen eller ring oss."}`);
+          slotWrap.querySelectorAll("button").forEach(b => { b.disabled = false; b.style.opacity = "1"; });
+        }
+      } catch (_) {
+        form.remove();
+        leggTilMelding("bot", "Kunne ikke fullføre bookingen. Prøv igjen eller ring oss.");
+        slotWrap.querySelectorAll("button").forEach(b => { b.disabled = false; b.style.opacity = "1"; });
+      }
+    };
+  }
+
+  // Vekk serveren ved sidelast – slik at første chat ikke feiler
+  let serverOppe = false;
+  fetch(medSlug("/health")).then(r => r.ok && (serverOppe = true)).catch(() => {});
+
+  async function ventPaServer() {
+    if (serverOppe) return true;
+    for (let i = 0; i < 8; i++) {
+      try {
+        const r = await fetch(medSlug("/health"));
+        if (r.ok) { serverOppe = true; return true; }
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    return false;
   }
 
   async function sendChatMsg() {
@@ -932,13 +1027,14 @@
     const sendBtn = document.querySelector(".chat-send");
     const msg     = input.value.trim();
     if (!msg) return;
-    // Lås input under sending
+
     input.disabled   = true;
     if (sendBtn) sendBtn.disabled = true;
     input.value = "";
     leggTilMelding("user", msg);
     chatHistory.push({ role: "user", content: msg });
 
+    // Typing-indikator
     const typingWrap = leggTilMelding("bot", "");
     const typing = document.createElement("div");
     typing.className = "typing-dot";
@@ -946,21 +1042,54 @@
     typingWrap.querySelector(".chat-boble").appendChild(typing);
 
     try {
+      // Vekk serveren hvis den sover (Render free tier)
+      if (!serverOppe) {
+        const oppe = await ventPaServer();
+        if (!oppe) {
+          typingWrap.remove();
+          leggTilMelding("bot", "Serveren starter opp – prøv igjen om 10 sekunder. ⏳");
+          return;
+        }
+      }
+
       const res = await fetch(CHAT_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history: chatHistory }),
-        signal: AbortSignal.timeout(15000)
+        body: JSON.stringify({ message: msg, history: chatHistory })
       });
-      const data = await res.json();
+
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      let data;
+      try { data = await res.json(); }
+      catch (_) { throw new Error("Ugyldig svar fra server"); }
+
       typingWrap.remove();
-      leggTilMelding("bot", data.reply);
-      chatHistory.push({ role: "assistant", content: data.reply });
+
+      if (data.reply) {
+        leggTilMelding("bot", data.reply);
+        chatHistory.push({ role: "assistant", content: data.reply });
+      }
+
       if (data.ledigeTider && data.ledigeTider.length > 0) visLedigeTider(data.ledigeTider);
+      else if (Array.isArray(data.ledigeTider) && data.ledigeTider.length === 0) {
+        leggTilMelding("bot", "Ingen ledige tider den dagen. Vil du prøve en annen dag?");
+      }
+
       if (chatHistory.length > 16) chatHistory = chatHistory.slice(-16);
-    } catch (e) {
+
+    } catch (err) {
       typingWrap.remove();
-      leggTilMelding("bot", "Beklager, noe gikk galt. Prøv igjen om litt.");
+      if (err.message && err.message.includes("504")) {
+        leggTilMelding("bot", "Serveren brukte for lang tid. Prøv igjen om litt. 🔄");
+      } else {
+        leggTilMelding("bot", "Noe gikk galt. Prøv igjen om litt.");
+      }
+      console.error("[Chat] Feil:", err.message);
+    } finally {
+      input.disabled   = false;
+      if (sendBtn) sendBtn.disabled = false;
+      input.focus();
     }
   }
 
