@@ -406,7 +406,7 @@
 
     <div class="knapp-rad">
       <button class="knapp-sek" onclick="gaaTilSteg(3)">← Tilbake</button>
-      <button class="knapp-prim" id="aktiver-btn" onclick="aktiverSalong()">🚀 Aktiver salong</button>
+      <button class="knapp-prim" id="aktiver-btn" onclick="aktiverSalong()">🚀 Send inn registrering</button>
     </div>
   </div>
 
@@ -414,15 +414,11 @@
   <div id="steg-5" class="kort" style="display:none;">
     <div class="suksess-kort">
       <div class="suksess-ikon">🎉</div>
-      <div class="suksess-tittel">Salongen er aktiv!</div>
+      <div class="suksess-tittel">Registrering mottatt!</div>
       <div class="suksess-tekst">
-        AI-assistenten, nettsiden og dashboardet er klart. En velkomstepost med alle detaljer er sendt til <strong id="suksess-epost"></strong>.
+        Takk! Vi har mottatt registreringen for salongen din. En bekreftelse er sendt til <strong id="suksess-epost"></strong>, og vi setter opp AI-assistenten, nettsiden og dashboardet ditt.
       </div>
       <div class="suksess-url" id="suksess-url"></div>
-      <div class="suksess-knapper">
-        <a id="suksess-link-nettside" href="#" target="_blank" class="knapp-prim" style="text-decoration:none;">Se nettsiden →</a>
-        <a id="suksess-link-dashboard" href="#" target="_blank" class="knapp-sek" style="text-decoration:none;padding:13px 24px;border:1px solid var(--cream-3);border-radius:8px;color:var(--ink-3);">Åpne dashboard</a>
-      </div>
     </div>
   </div>
 
@@ -785,15 +781,13 @@
       ekstraInfo:   document.getElementById("ekstra-info").value.trim(),
     };
 
-    const apiKeys = {}; // Bruker serverens egne nøkler
-
     setStatusIkon("config", "laster");
 
     try {
-      const res = await fetch("/provision", {
+      const res = await fetch("/onboarding-soknad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ konfig, apiKeys })
+        body: JSON.stringify({ konfig })
       });
 
       const data = await res.json();
@@ -802,7 +796,7 @@
         setStatusIkon("config", "feil");
         alert("Feil: " + (data.feil || "Ukjent feil"));
         btn.disabled = false;
-        btn.textContent = "🚀 Aktiver salong";
+        btn.textContent = "🚀 Send inn registrering";
         return;
       }
 
@@ -811,20 +805,19 @@
       setStatusIkon("deploy", "ok");
       setStatusIkon("epost", "ok");
 
-      // Vis suksess
+      // Vis suksess – salongen aktiveres manuelt av drift, ikke umiddelbart
       document.getElementById("steg-4").style.display = "none";
       document.getElementById("steg-5").style.display = "";
       document.getElementById("suksess-epost").textContent = konfig.epost;
-      document.getElementById("suksess-url").textContent   = data.url;
-      document.getElementById("suksess-link-nettside").href   = data.url;
-      document.getElementById("suksess-link-dashboard").href  = data.url + "/dashboard";
+      const urlEl = document.getElementById("suksess-url");
+      if (urlEl) urlEl.textContent = "Vi tar kontakt på e-post når alt er klart (vanligvis innen 1 virkedag).";
       oppdaterStegIndikator(4, 5);
 
     } catch (err) {
       setStatusIkon("config", "feil");
       alert("Nettverksfeil: " + err.message);
       btn.disabled = false;
-      btn.textContent = "🚀 Aktiver salong";
+      btn.textContent = "🚀 Send inn registrering";
     }
   }
 
