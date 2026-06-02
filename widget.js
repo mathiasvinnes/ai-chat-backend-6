@@ -1,12 +1,36 @@
 (function () {
-  // ── Konfigurasjon ──────────────────────────────────────────────────────────
+  // ── Tenant-slug (multi-tenant) ──────────────────────────────────────────────
+  // Utled hvilken salong widgeten gjelder. Embed-koden kan sette window.SK_SLUG,
+  // ellers leses ?salong= eller subdomene.
+  function hentSlug() {
+    if (window.SK_SLUG) return window.SK_SLUG;
+    var p = new URLSearchParams(window.location.search).get("salong");
+    if (p) return p;
+    var vert = window.location.hostname.split(".");
+    if (vert.length > 2 && vert[0] !== "www") return vert[0];
+    return "";
+  }
+  // Hvor serveren ligger. Embed-koden kan sette window.SK_HOST (f.eks. for ekstern
+  // nettside som laster widgeten fra ai-salong-serveren).
+  var HOST = window.SK_HOST || window.location.origin;
+  var SLUG = hentSlug();
+  function medSlug(sti) {
+    if (!SLUG) return HOST + sti;
+    var skille = sti.indexOf("?") >= 0 ? "&" : "?";
+    return HOST + sti + skille + "salong=" + encodeURIComponent(SLUG);
+  }
+
+  // ── Konfigurasjon (oppdateres fra /api/config) ──────────────────────────────
   var CONFIG = {
-    apiUrl:      window.location.origin + "/chat",
-    healthUrl:   window.location.origin + "/health",
-    bedrift:     "Studio Klipp",
+    apiUrl:      medSlug("/chat"),
+    bookUrl:     medSlug("/book"),
+    healthUrl:   medSlug("/health"),
+    configUrl:   medSlug("/api/config"),
+    bedrift:     "Salongen",
+    initialer:   "AI",
     velkomst:    "Hei! Jeg er den automatiske assistenten. Spør meg om priser, behandlinger eller booking.",
-    farge:       "#0d0d0d",      // hovedfarge (boble og header)
-    aksentFarge: "#b8924a",      // gullaksent
+    farge:       "#0d0d0d",
+    aksentFarge: "#b8924a",
   };
 
   // ── Vekk serveren ──────────────────────────────────────────────────────────
@@ -163,7 +187,7 @@
     /* Panel */
     '<div id="sk-panel">',
     '  <div id="sk-header">',
-    '    <div id="sk-avatar">SK</div>',
+    '    <div id="sk-avatar">AI</div>',
     '    <div id="sk-header-text">',
     '      <h3>' + CONFIG.bedrift + '</h3>',
     '      <p>AI-assistent</p>',
@@ -216,7 +240,7 @@
 
     var av = document.createElement("div");
     av.className = "sk-av " + role;
-    av.textContent = role === "user" ? "Deg" : "SK";
+    av.textContent = role === "user" ? "Deg" : CONFIG.initialer;
 
     var bbl = document.createElement("div");
     bbl.className = "sk-bubble-msg " + role;
@@ -254,19 +278,17 @@
     var wrap = document.createElement("div");
     wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;padding-left:38px;margin-top:4px;";
     tider.forEach(function(t) {
-      var btn = document.createElement("a");
-      btn.href = t.url;
-      btn.target = "_blank";
-      btn.rel = "noopener noreferrer";
+      var btn = document.createElement("button");
       btn.textContent = t.visning;
       btn.style.cssText = [
         "display:inline-block","background:#f9f6f1","border:1px solid #e8e2d9",
         "color:#0d0d0d","font-family:'DM Sans',sans-serif","font-size:13px","font-weight:500",
-        "padding:9px 16px","border-radius:10px","text-decoration:none","cursor:pointer",
+        "padding:9px 16px","border-radius:10px","text-align:left","cursor:pointer","width:fit-content",
         "transition:background 0.15s,color 0.15s"
       ].join(";");
       btn.onmouseover = function() { btn.style.background = CONFIG.aksentFarge; btn.style.color = "#fff"; };
-      btn.onmouseout = function() { btn.style.background = "#f9f6f1"; btn.style.color = "#0d0d0d"; };
+      btn.onmouseout  = function() { btn.style.background = "#f9f6f1"; btn.style.color = "#0d0d0d"; };
+      btn.addEventListener("click", function() { startBooking(t, wrap); });
       wrap.appendChild(btn);
     });
     messages.appendChild(wrap);
@@ -274,11 +296,66 @@
     setTimeout(function() { messages.scrollTop = messages.scrollHeight; }, 150);
   }
 
+  // Samle inn navn + e-post i chatten, deretter book via /book
+  function startBooking(t, slotWrap) {
+    slotWrap.querySelectorAll("button").forEach(function(b) {
+      b.disabled = true; b.style.opacity = "0.4"; b.style.cursor = "not-allowed";
+    });
+    var form = document.createElement("div");
+    form.style.cssText = "display:flex;flex-direction:column;gap:8px;padding-left:38px;margin-top:6px;";
+    form.innerHTML = [
+      '<input class="sk-book-felt" type="text" placeholder="Navn" style="border:1px solid #ddd;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;">',
+      '<input class="sk-book-felt" type="email" placeholder="E-post" style="border:1px solid #ddd;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;">'
+    ].join("");
+    var bekreft = document.createElement("button");
+    bekreft.textContent = "Bekreft booking " + t.visning;
+    bekreft.style.cssText = "background:" + CONFIG.aksentFarge + ";color:#fff;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;";
+    form.appendChild(bekreft);
+    messages.appendChild(form);
+    messages.scrollTop = messages.scrollHeight;
+    var felter = form.querySelectorAll(".sk-book-felt");
+    felter[0].focus();
+
+    bekreft.addEventListener("click", async function() {
+      var navn  = felter[0].value.trim();
+      var epost = felter[1].value.trim();
+      if (!navn || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) {
+        if (!navn) felter[0].style.borderColor = "#e05";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) felter[1].style.borderColor = "#e05";
+        return;
+      }
+      bekreft.disabled = true; bekreft.textContent = "Booker...";
+      try {
+        var res = await fetch(CONFIG.bookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ navn: navn, epost: epost, tid: t.tid })
+        });
+        var data = await res.json();
+        form.remove();
+        if (data.ok) {
+          addMessage("bot", "✅ Time booket! Bekreftelse er sendt til " + epost + ". Vi sees " + t.visning + "! 🎉");
+        } else {
+          addMessage("bot", "Noe gikk galt: " + (data.feil || "prøv igjen eller ring oss."));
+          slotWrap.querySelectorAll("button").forEach(function(b) {
+            b.disabled = false; b.style.opacity = "1"; b.style.cursor = "pointer";
+          });
+        }
+      } catch (e) {
+        form.remove();
+        addMessage("bot", "Kunne ikke fullføre bookingen. Prøv igjen eller ring oss.");
+        slotWrap.querySelectorAll("button").forEach(function(b) {
+          b.disabled = false; b.style.opacity = "1"; b.style.cursor = "pointer";
+        });
+      }
+    });
+  }
+
   function showTyping() {
     var row = document.createElement("div");
     row.className = "sk-row"; row.id = "sk-typing-row";
     var av = document.createElement("div");
-    av.className = "sk-av bot"; av.textContent = "SK";
+    av.className = "sk-av bot"; av.textContent = CONFIG.initialer;
     var t = document.createElement("div");
     t.className = "sk-typing";
     t.innerHTML = "<span></span><span></span><span></span>";
@@ -302,6 +379,28 @@
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 100) + "px";
   }
+
+  // ── Hent salong-config og oppdater dynamisk innhold ─────────────────────────
+  fetch(CONFIG.configUrl)
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(cfg) {
+      if (!cfg || !cfg.bedrift) return;
+      CONFIG.bedrift = cfg.bedrift;
+      CONFIG.initialer = cfg.bedrift.split(" ").map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
+      if (cfg.velkomst) CONFIG.velkomst = cfg.velkomst;
+      if (cfg.bookinglink) CONFIG.bookinglink = cfg.bookinglink;
+      // Oppdater synlige elementer
+      var h3 = document.querySelector("#sk-header-text h3");
+      if (h3) h3.textContent = cfg.bedrift;
+      var avatar = document.getElementById("sk-avatar");
+      if (avatar) avatar.textContent = CONFIG.initialer;
+      document.querySelectorAll(".sk-av.bot").forEach(function(el){ el.textContent = CONFIG.initialer; });
+      // Farger
+      if (cfg.farge && /^#[0-9a-fA-F]{6}$/.test(cfg.farge)) {
+        CONFIG.aksentFarge = cfg.farge;
+      }
+    })
+    .catch(function(){});
 
   // ── Toggle panel ──────────────────────────────────────────────────────────
   function togglePanel() {
