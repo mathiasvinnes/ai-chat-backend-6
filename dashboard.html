@@ -467,20 +467,26 @@
   document.getElementById("logout-btn").addEventListener("click", () => sb.auth.signOut());
 
   // ── LAST DATA ────────────────────────────────────────────────────────────────
+  let AKTIV_SLUG = null;
   async function visDashboard(user) {
     loginScreen.style.display = "none";
     dashScreen.style.display = "block";
     try {
-      const res = await fetch(
-        SUPABASE_URL + "/rest/v1/samtaler?select=*&order=opprettet.desc&limit=500",
-        { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY } }
-      );
+      // Hent kun DENNE salongens samtaler via sikret server-endepunkt
+      const res = await fetch(window.location.origin + "/dashboard-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ epost: user.email })
+      });
       if (!res.ok) {
-        samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Feil ${res.status}: Kunne ikke laste samtaler.</div>`;
+        const e = await res.json().catch(() => ({}));
+        samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">${esc(e.error || ("Feil " + res.status))}</div>`;
         return;
       }
-      const data = await res.json();
-      const bedrift = data.length > 0 ? data[0].bedrift : user.email;
+      const payload = await res.json();
+      const data = payload.samtaler || [];
+      AKTIV_SLUG = payload.slug || null;
+      const bedrift = payload.bedrift || user.email;
       document.getElementById("topbar-bedrift").textContent = bedrift;
       document.getElementById("page-sub").textContent = `Samtaler for ${bedrift}`;
       alleRader = data;
@@ -882,8 +888,17 @@
   // ── SLETT ────────────────────────────────────────────────────────────────────
   async function slettSamtale(id) {
     if (!confirm("Slett denne samtalen? Dette kan ikke angres.")) return;
-    const { error } = await sb.from("samtaler").delete().eq("id", id);
-    if (error) { alert("Kunne ikke slette. Prøv igjen."); return; }
+    const { data: sess } = await sb.auth.getSession();
+    const epost = sess?.session?.user?.email;
+    if (!epost) { alert("Du må være innlogget."); return; }
+    try {
+      const res = await fetch(window.location.origin + "/slett-samtale", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, epost })
+      });
+      if (!res.ok) { alert("Kunne ikke slette. Prøv igjen."); return; }
+    } catch (_) { alert("Kunne ikke slette. Prøv igjen."); return; }
     alleRader = alleRader.filter(r => String(r.id) !== String(id));
     oppdaterStats(alleRader);
     tegnDiagram(alleRader);
