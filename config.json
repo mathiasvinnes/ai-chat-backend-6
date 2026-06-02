@@ -24,8 +24,8 @@
     "Onsdag": "10:00 - 18:00",
     "Torsdag": "10:00 - 20:00",
     "Fredag": "10:00 - 18:00",
-    "Lordag": "10:00 - 15:00",
-    "Sondag": "Stengt"
+    "Lørdag": "10:00 - 15:00",
+    "Søndag": "Stengt"
   },
   "bookinglink": "https://cal.eu/mathias-vinnes-0c4tfq/frisørtime",
   "telefon": "+47 22 33 44 55",
