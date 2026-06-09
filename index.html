@@ -765,6 +765,10 @@
         const mork = "#" + rgb.map(c => Math.max(0, c-40).toString(16).padStart(2,"0")).join("");
         r.style.setProperty("--gold-light", lys + "40");
         r.style.setProperty("--gold-dark",  mork);
+        // Hvis salongen har valgt egen sekundærfarge, bruk den til aksenter/hover
+        if (cfg.sekundarfarge && /^#[0-9a-fA-F]{6}$/.test(cfg.sekundarfarge)) {
+          r.style.setProperty("--gold-dark", cfg.sekundarfarge);
+        }
         // Oppdater primærknapper (ikke chat-send – den styres av CSS-variabel)
         document.querySelectorAll(".knapp-prim, .nav-book, #chat-fab").forEach(el => {
           el.style.background = cfg.farge;
