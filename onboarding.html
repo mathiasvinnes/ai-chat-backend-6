@@ -290,6 +290,33 @@
     </div>
     <div style="font-size:11px;color:var(--ink-3);margin-top:6px;">Du kan lime inn en HEX-kode direkte, f.eks. fra salongens logo eller branding-farger.</div>
 
+    <!-- Sekundærfarge -->
+    <div style="margin-top:28px;">
+      <div class="felt-label" style="margin-bottom:6px;">Sekundærfarge</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;">Brukes til aksenter og detaljer på nettsiden, sammen med primærfargen. Velg en farge som utfyller primærfargen.</div>
+      <div class="farge-grid" id="sekundar-grid">
+        <div class="farge-alternativ valgt" style="background:#8a6a2a;" data-farge="#8a6a2a" onclick="velgSekundar(this)" title="Mørk gull"></div>
+        <div class="farge-alternativ" style="background:#1a1510;" data-farge="#1a1510" onclick="velgSekundar(this)" title="Kull"></div>
+        <div class="farge-alternativ" style="background:#3d3530;" data-farge="#3d3530" onclick="velgSekundar(this)" title="Mørk brun"></div>
+        <div class="farge-alternativ" style="background:#2d6a4f;" data-farge="#2d6a4f" onclick="velgSekundar(this)" title="Skoggrønn"></div>
+        <div class="farge-alternativ" style="background:#2c3e6b;" data-farge="#2c3e6b" onclick="velgSekundar(this)" title="Marineblå"></div>
+        <div class="farge-alternativ" style="background:#6d4c9e;" data-farge="#6d4c9e" onclick="velgSekundar(this)" title="Lilla"></div>
+        <div class="farge-alternativ" style="background:#1a7a8a;" data-farge="#1a7a8a" onclick="velgSekundar(this)" title="Teal"></div>
+        <div class="farge-alternativ" style="background:#c0392b;" data-farge="#c0392b" onclick="velgSekundar(this)" title="Rød"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+        <input type="color" id="sekundar-picker" value="#8a6a2a"
+          style="width:44px;height:44px;border:none;border-radius:8px;cursor:pointer;padding:2px;background:none;"
+          oninput="velgSekundarCustom(this.value)" />
+        <div style="flex:1;">
+          <div class="felt-label" style="margin-bottom:4px;">Egendefinert HEX-farge</div>
+          <input class="felt-input" id="sekundar-hex" placeholder="#8a6a2a" value="#8a6a2a" maxlength="7"
+            style="font-family:monospace;margin:0;" oninput="oppdaterSekundarFraHex(this.value)" />
+        </div>
+        <div id="sekundar-forhands" style="width:44px;height:44px;border-radius:8px;background:#8a6a2a;border:1px solid var(--cream-3);flex-shrink:0;"></div>
+      </div>
+    </div>
+
     <!-- Bakgrunnsfarge -->
     <div style="margin-top:28px;">
       <div class="felt-label" style="margin-bottom:6px;">Bakgrunnsfarge</div>
@@ -331,6 +358,11 @@
           <img src="https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?w=300&q=70" class="bilde-valg" data-felt="hero" onclick="velgBilde(this,'hero')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Hårfarge" />
         </div>
         <input class="felt-input" id="bilde-hero" placeholder="...eller lim inn en egen URL" style="margin:0;" oninput="oppdaterBildePreview('hero',this.value)" />
+        <div style="margin-top:8px;">
+          <input type="file" id="fil-hero" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;" onchange="lastOppFil(this,'hero')" />
+          <button type="button" class="knapp-sek" style="font-size:13px;padding:8px 16px;" onclick="document.getElementById('fil-hero').click()">📁 Last opp eget bilde</button>
+          <span id="opp-status-hero" style="font-size:12px;color:var(--ink-3);margin-left:10px;"></span>
+        </div>
         <div style="margin-top:6px;border-radius:8px;overflow:hidden;height:80px;background:var(--cream-2);">
           <img id="preview-hero" src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=600&q=70" style="width:100%;height:80px;object-fit:cover;" />
         </div>
@@ -350,6 +382,11 @@
           <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&q=70" class="bilde-valg" data-felt="om" onclick="velgBilde(this,'om')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;" title="Mann klipp" />
         </div>
         <input class="felt-input" id="bilde-om" placeholder="...eller lim inn en egen URL" style="margin:0;" oninput="oppdaterBildePreview('om',this.value)" />
+        <div style="margin-top:8px;">
+          <input type="file" id="fil-om" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;" onchange="lastOppFil(this,'om')" />
+          <button type="button" class="knapp-sek" style="font-size:13px;padding:8px 16px;" onclick="document.getElementById('fil-om').click()">📁 Last opp eget bilde</button>
+          <span id="opp-status-om" style="font-size:12px;color:var(--ink-3);margin-left:10px;"></span>
+        </div>
         <div style="margin-top:6px;border-radius:8px;overflow:hidden;height:80px;background:var(--cream-2);">
           <img id="preview-om" src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=70" style="width:100%;height:80px;object-fit:cover;" />
         </div>
@@ -596,6 +633,31 @@
     document.getElementById("preview-chat").style.background = valgtBakgrunn;
   }
 
+  // ── Sekundærfarge ──────────────────────────────────────────────────────────
+  let valgtSekundar = "#8a6a2a";
+  function velgSekundar(el) {
+    document.querySelectorAll("#sekundar-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+    el.classList.add("valgt");
+    valgtSekundar = el.dataset.farge;
+    document.getElementById("sekundar-hex").value = valgtSekundar;
+    document.getElementById("sekundar-picker").value = valgtSekundar;
+    document.getElementById("sekundar-forhands").style.background = valgtSekundar;
+  }
+  function velgSekundarCustom(hex) {
+    valgtSekundar = hex;
+    document.getElementById("sekundar-hex").value = hex;
+    document.getElementById("sekundar-forhands").style.background = hex;
+    document.querySelectorAll("#sekundar-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+  }
+  function oppdaterSekundarFraHex(val) {
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+      valgtSekundar = val;
+      document.getElementById("sekundar-picker").value = val;
+      document.getElementById("sekundar-forhands").style.background = val;
+      document.querySelectorAll("#sekundar-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
+    }
+  }
+
   // Sett standardbilder
   document.getElementById("bilde-hero").value = "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80";
   document.getElementById("bilde-om").value   = "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=700&q=80";
@@ -614,6 +676,57 @@
     if (url) {
       document.getElementById("preview-" + felt).src = url;
       document.querySelectorAll(`.bilde-valg[data-felt="${felt}"]`).forEach(b => b.style.borderColor = "transparent");
+    }
+  }
+
+  // Last opp egen bildefil til serveren (som lagrer i Supabase Storage)
+  async function lastOppFil(input, felt) {
+    const fil = input.files && input.files[0];
+    if (!fil) return;
+    const status = document.getElementById("opp-status-" + felt);
+    const tillatt = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!tillatt.includes(fil.type)) {
+      status.textContent = "Kun JPG, PNG, WEBP eller GIF.";
+      status.style.color = "#c0392b";
+      return;
+    }
+    if (fil.size > 5 * 1024 * 1024) {
+      status.textContent = "Bildet er for stort (maks 5 MB).";
+      status.style.color = "#c0392b";
+      return;
+    }
+    status.style.color = "var(--ink-3)";
+    status.textContent = "Laster opp...";
+
+    try {
+      // Les fila som base64
+      const base64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(",")[1]);
+        r.onerror = () => rej(new Error("Kunne ikke lese fila"));
+        r.readAsDataURL(fil);
+      });
+
+      const svar = await fetch(window.location.origin + "/last-opp-bilde", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fil: base64, filtype: fil.type })
+      });
+      const data = await svar.json();
+      if (!svar.ok || !data.ok) {
+        status.textContent = data.feil || "Opplasting feilet.";
+        status.style.color = "#c0392b";
+        return;
+      }
+      // Sett URL-en i feltet og oppdater preview
+      document.getElementById("bilde-" + felt).value = data.url;
+      document.getElementById("preview-" + felt).src = data.url;
+      document.querySelectorAll(`.bilde-valg[data-felt="${felt}"]`).forEach(b => b.style.borderColor = "transparent");
+      status.textContent = "✓ Lastet opp";
+      status.style.color = "#2d6a4f";
+    } catch (err) {
+      status.textContent = "Nettverksfeil. Prøv igjen.";
+      status.style.color = "#c0392b";
     }
   }
 
@@ -766,6 +879,7 @@
       tone:         document.getElementById("tone").value,
       sprakOgLand:  "norsk",
       farge:        valgtFarge,
+      sekundarfarge: valgtSekundar,
       bakgrunn:     valgtBakgrunn,
       beskrivelse:  document.getElementById("beskrivelse").value.trim(),
       erfaringAar:  document.getElementById("erfaringAar").value.trim(),
