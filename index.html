@@ -640,8 +640,8 @@
   </div>
   <div class="fade-in fade-in-2">
     <div class="kontakt-kart">
-      <iframe
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000.0!2d10.752245!3d59.913868!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46416e61f267f039%3A0x7e92605fd3231e9a!2sStorgata%2012%2C%200182%20Oslo!5e0!3m2!1sno!2sno!4v1"
+      <iframe id="kontakt-kart-iframe"
+        src="https://www.google.com/maps?q=Storgata+12,+0182+Oslo&output=embed"
         width="100%" height="300" style="border:0;filter:sepia(20%) contrast(90%);"
         allowfullscreen="" loading="lazy"></iframe>
     </div>
@@ -808,7 +808,23 @@
 
       // ── Bilder ────────────────────────────────────────────────────────────
       if (cfg.bildeHero && s("hero-bilde")) s("hero-bilde").src = cfg.bildeHero;
-      if (cfg.bildeOm   && s("om-bilde"))   s("om-bilde").src   = cfg.bildeOm;
+      if (cfg.bildeOm   && s("om-bilde")) {
+        const omBilde = s("om-bilde");
+        omBilde.src = cfg.bildeOm;
+        // La rammen tilpasse seg bildets faktiske form (stående/vannrett/kvadrat)
+        // i stedet for å tvinge 3:4 og beskjære. Layouten påvirkes, men ødelegges ikke.
+        omBilde.onload = () => {
+          const wrap = omBilde.closest(".om-bilde-wrap");
+          if (wrap && omBilde.naturalWidth && omBilde.naturalHeight) {
+            let ratio = omBilde.naturalWidth / omBilde.naturalHeight;
+            // Begrens ytterpunktene så et ekstremt bilde ikke sprenger layouten
+            ratio = Math.max(0.6, Math.min(1.6, ratio));
+            wrap.style.aspectRatio = ratio.toFixed(3);
+            wrap.style.background = "var(--cream-2)";
+            omBilde.style.objectFit = "cover";
+          }
+        };
+      }
 
       // ── Hero-tekst ────────────────────────────────────────────────────────
       if (cfg.beskrivelse && s("hero-tekst")) {
@@ -828,6 +844,11 @@
         // Split på komma for adresse-formatering (Storgata 12, 0182 Oslo → to linjer)
         const adr = cfg.adresse.split(",").map(d => e(d.trim())).join("<br>");
         s("info-adresse").innerHTML = adr;
+      }
+      // Oppdater Google Maps-kartet basert på salongens adresse (ingen API-nøkkel nødvendig)
+      if (cfg.adresse && s("kontakt-kart-iframe")) {
+        const q = encodeURIComponent(cfg.adresse);
+        s("kontakt-kart-iframe").src = `https://www.google.com/maps?q=${q}&output=embed`;
       }
       if (cfg.telefon && s("info-telefon")) s("info-telefon").textContent = cfg.telefon;
       if (cfg.epost   && s("info-epost"))   s("info-epost").textContent   = cfg.epost;
