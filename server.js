@@ -28,6 +28,8 @@ const CAL_BASE         = process.env.CAL_BASE || "https://api.cal.com/v2";
 const DEFAULT_SLUG     = process.env.DEFAULT_SLUG || "demo";
 // Basisdomene for subdomene-ruting, f.eks. "ai-salong.no" → kunde.ai-salong.no
 const BASE_DOMAIN      = process.env.BASE_DOMAIN || "";
+// Supabase Storage-bucket for opplastede salong-bilder (må være public)
+const BILDE_BUCKET     = process.env.BILDE_BUCKET || "salong-bilder";
 
 if (!OPENAI_API_KEY) console.warn("[ADVARSEL] OPENAI_API_KEY mangler – chat vil ikke fungere");
 if (!SUPABASE_URL || !SUPABASE_KEY) console.warn("[ADVARSEL] Supabase mangler – bruker kun lokal config.json");
@@ -142,6 +144,7 @@ function radTilConfig(rad) {
     apningstider: base.apningstider || {},
     faq:          base.faq          || {},
     farge:        base.farge        || "#b8924a",
+    sekundarfarge: base.sekundarfarge || "#8a6a2a",
     bakgrunn:     base.bakgrunn     || "#f5f0e8",
     beskrivelse:  base.beskrivelse  || "",
     usp:          base.usp          || [],
@@ -521,6 +524,7 @@ const rateLimitChat = lagRateLimit(20, "chat:");
 const rateLimitBook = lagRateLimit(5,  "book:");
 const rateLimitDash = lagRateLimit(10, "dash:");
 const rateLimitProv = lagRateLimit(3,  "prov:");
+const rateLimitOpp  = lagRateLimit(10, "opp:");   // bildeopplasting
 
 // ── Statiske sider (tenant-uavhengige filer) ───────────────────────────────────
 // index.html får injisert riktig salong-config server-side.
@@ -554,6 +558,7 @@ function offentligConfig(c) {
     velkomst: c.velkomst, adresse: c.adresse, telefon: c.telefon, epost: c.epost,
     bookinglink: c.bookinglink, tjenester: c.tjenester, priser: c.priser,
     apningstider: c.apningstider, farge: c.farge, bakgrunn: c.bakgrunn,
+    sekundarfarge: c.sekundarfarge,
     usp: c.usp, produkter: c.produkter, erfaringAar: c.erfaringAar,
     ansatte: c.ansatte, kunder: c.kunder, bildeHero: c.bildeHero, bildeOm: c.bildeOm
   };
@@ -796,6 +801,67 @@ app.delete("/slett-samtale", corsPublic, rateLimitDash, async (req, res) => {
   }
 });
 
+// ── /last-opp-bilde – tar imot et bilde (base64), laster opp til Supabase Storage ─
+//   Går gjennom serveren (service_role) så bucketen ikke er åpen for skriving fra
+//   nettleseren. Validerer filtype og størrelse. Returnerer offentlig URL.
+const opplastParser = express.json({ limit: "8mb" });
+app.post("/last-opp-bilde", corsPublic, rateLimitOpp, opplastParser, async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_KEY)
+    return res.status(503).json({ ok: false, feil: "Lagring ikke konfigurert." });
+
+  const { fil, filtype } = req.body || {};
+  if (!fil || typeof fil !== "string")
+    return res.status(400).json({ ok: false, feil: "Mangler bildedata." });
+
+  // Tillatte bildetyper
+  const tillatt = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
+  if (!tillatt[filtype])
+    return res.status(400).json({ ok: false, feil: "Kun JPG, PNG, WEBP eller GIF er tillatt." });
+
+  // Strip evt. data-URL-prefiks og dekod base64
+  const reinBase64 = fil.replace(/^data:[^;]+;base64,/, "");
+  let bytes;
+  try {
+    bytes = Buffer.from(reinBase64, "base64");
+  } catch {
+    return res.status(400).json({ ok: false, feil: "Ugyldig bildedata." });
+  }
+  // Maks 5 MB
+  if (bytes.length === 0 || bytes.length > 5 * 1024 * 1024)
+    return res.status(400).json({ ok: false, feil: "Bildet må være mellom 0 og 5 MB." });
+
+  // Tilfeldig filnavn
+  const tilfeldig = [...crypto.getRandomValues(new Uint8Array(12))]
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+  const filnavn = `${Date.now()}-${tilfeldig}.${tillatt[filtype]}`;
+
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/${BILDE_BUCKET}/${filnavn}`,
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": filtype,
+          "x-upsert": "true"
+        },
+        body: bytes
+      }
+    );
+    if (!r.ok) {
+      const txt = await r.text().catch(() => "");
+      console.error("[OPPLAST] Supabase Storage-feil:", r.status, txt);
+      return res.status(502).json({ ok: false, feil: "Kunne ikke laste opp bildet." });
+    }
+    const offentligUrl = `${SUPABASE_URL}/storage/v1/object/public/${BILDE_BUCKET}/${filnavn}`;
+    return res.json({ ok: true, url: offentligUrl });
+  } catch (err) {
+    console.error("[OPPLAST] Feil:", err.message);
+    return res.status(500).json({ ok: false, feil: "Serverfeil ved opplasting." });
+  }
+});
+
 // ── /onboarding-soknad – offentlig: sender salong-config til eier for godkjenning ─
 //   Onboarding-siden er offentlig, så den oppretter IKKE en salong direkte.
 //   Den sender konfigurasjonen til eieren, som aktiverer via admin-verktøyet.
@@ -863,6 +929,7 @@ app.post("/provision", corsPublic, rateLimitProv, krevAdminToken, async (req, re
     bookinglink: konfig.bookinglink || "", tjenester: konfig.tjenester || [],
     priser: konfig.priser || [], apningstider: konfig.apningstider || {},
     farge: konfig.farge || "#b8924a", bakgrunn: konfig.bakgrunn || "#f5f0e8",
+    sekundarfarge: konfig.sekundarfarge || "#8a6a2a",
     beskrivelse: konfig.beskrivelse || "", usp: konfig.usp || [],
     produkter: konfig.produkter || "", erfaringAar: konfig.erfaringAar || "",
     ansatte: konfig.ansatte || "", kunder: konfig.kunder || "",
