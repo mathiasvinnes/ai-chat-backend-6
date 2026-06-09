@@ -499,7 +499,11 @@ async function sendTelegram(tekst) {
 // ════════════════════════════════════════════════════════════════════════════
 const app = express();
 app.set("trust proxy", 1); // Render sitter bak proxy – nødvendig for korrekt req.ip
-app.use(express.json({ limit: "10kb" }));
+// Global JSON-parser med liten grense, men hopp over bildeopplasting (egen 8mb-parser).
+app.use((req, res, next) => {
+  if (req.path === "/last-opp-bilde") return next();
+  express.json({ limit: "10kb" })(req, res, next);
+});
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const corsPublic = cors({ origin: "*" });
