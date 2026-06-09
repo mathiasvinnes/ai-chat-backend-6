@@ -471,6 +471,29 @@ async function sendBookingVarsel(config, { navn, melding }) {
   }
 }
 
+// ── Telegram-varsel ───────────────────────────────────────────────────────────
+// Sender en melding til deg umiddelbart. Krever TELEGRAM_BOT_TOKEN og
+// TELEGRAM_CHAT_ID som miljøvariabler. Gjør ingenting hvis de mangler.
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
+async function sendTelegram(tekst) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: tekst,
+        parse_mode: "HTML",
+        disable_web_page_preview: true
+      })
+    });
+  } catch (err) {
+    console.error("[TELEGRAM] Feil:", err.message);
+  }
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 //  APP
 // ════════════════════════════════════════════════════════════════════════════
@@ -698,6 +721,11 @@ app.post("/book", corsPublic, rateLimitBook, krevTenant, async (req, res) => {
   if (!resultat.ok) return res.status(502).json({ ok: false, feil: resultat.feil });
 
   sendBookingVarsel(config, { navn, melding: `Ny booking: ${tid}` }).catch(() => {});
+  sendTelegram(
+    `📅 <b>Ny booking hos ${escapeHtml(config.bedrift)}</b>\n\n` +
+    `Navn: ${escapeHtml(navn)}\n` +
+    `Tid: ${escapeHtml(new Date(tid).toLocaleString("no-NO", { timeZone: "Europe/Oslo" }))}`
+  ).catch(() => {});
   const bookingUid = resultat.booking?.uid || resultat.booking?.id || null;
   return res.json({ ok: true, bookingUid });
 });
@@ -900,6 +928,15 @@ app.post("/onboarding-soknad", corsPublic, rateLimitProv, async (req, res) => {
       console.error("[ONBOARDING] E-post feil:", err.message);
     }
   }
+  // Telegram-varsel (umiddelbart, hvis konfigurert)
+  sendTelegram(
+    `🆕 <b>Ny salong-søknad</b>\n\n` +
+    `<b>${escapeHtml(konfig.bedrift)}</b>\n` +
+    `${escapeHtml(konfig.epost)}\n` +
+    `Slug: <code>${escapeHtml(normaliserSlug(konfig.slug || konfig.bedrift))}</code>\n\n` +
+    `Detaljene ligger i e-posten din.`
+  ).catch(() => {});
+
   console.log(`[ONBOARDING] Søknad mottatt: ${konfig.bedrift} (${konfig.epost})`);
   return res.json({ ok: true });
 });
