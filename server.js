@@ -316,31 +316,40 @@ async function hentLedigeTider(config, onsketDag = null, onsketTid = null) {
     const slutt = new Date(now);
     slutt.setDate(slutt.getDate() + 14);
 
+    // Cal.com v2 /slots: bruk start/end og cal-api-version 2024-09-04
     const params = new URLSearchParams({
       eventTypeId: String(eventId),
-      startTime:   now.toISOString(),
-      endTime:     slutt.toISOString(),
+      start:       now.toISOString(),
+      end:         slutt.toISOString(),
       timeZone:    "Europe/Oslo"
     });
 
     const calCtrl = new AbortController();
     const calTimeout = setTimeout(() => calCtrl.abort(), 8000);
-    const res = await fetch(`${CAL_BASE}/slots/available?${params}`, {
-      headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" },
+    const res = await fetch(`${CAL_BASE}/slots?${params}`, {
+      headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-09-04" },
       signal: calCtrl.signal
     });
     clearTimeout(calTimeout);
 
-    const data = JSON.parse(await res.text());
-    if (data.status !== "success") {
-      console.error(`[CAL] ${config.slug} API-feil:`, JSON.stringify(data));
+    let data;
+    try {
+      data = JSON.parse(await res.text());
+    } catch {
+      console.error(`[CAL] ${config.slug}: ugyldig JSON-svar (HTTP ${res.status})`);
+      return null;
+    }
+    if (!res.ok || data.status !== "success") {
+      console.error(`[CAL] ${config.slug} API-feil (HTTP ${res.status}):`, JSON.stringify(data).slice(0, 400));
       return null;
     }
 
-    const slots = data.data?.slots || {};
-    const alle  = Object.entries(slots).flatMap(([dag, tider]) =>
-      tider.map(t => ({ dag, tid: t.time }))
-    );
+    // Nytt format: data.data = { "2025-09-05": [ { start: "..." }, ... ] }
+    // Gammelt format: data.data.slots = { "dato": [ { time: "..." } ] }
+    const slotKilde = data.data?.slots || data.data || {};
+    const alle = Object.entries(slotKilde).flatMap(([dag, tider]) =>
+      (Array.isArray(tider) ? tider : []).map(t => ({ dag, tid: t.start || t.time }))
+    ).filter(t => t.tid);
     if (alle.length === 0) return onsketDag ? [] : null;
 
     let utvalg;
@@ -418,10 +427,10 @@ async function opprettBooking(config, { navn, epost, tid }) {
       signal: bookCtrl.signal
     });
     clearTimeout(bookTimeout);
-    const data = await res.json();
-    if (data.status !== "success") {
-      console.error(`[CAL] ${config.slug} booking feilet:`, JSON.stringify(data));
-      return { ok: false, feil: data.error?.message || "Ukjent feil" };
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.status !== "success") {
+      console.error(`[CAL] ${config.slug} booking feilet (HTTP ${res.status}):`, JSON.stringify(data).slice(0, 400));
+      return { ok: false, feil: data.error?.message || "Kunne ikke fullføre bookingen." };
     }
     return { ok: true, booking: data.data };
   } catch (err) {
@@ -745,14 +754,14 @@ app.get("/cal-lookup", corsPublic, async (req, res) => {
     const now = new Date(Date.now() + 5 * 60 * 1000);
     const slutt = new Date(now); slutt.setDate(slutt.getDate() + 7);
     const params = new URLSearchParams({
-      eventTypeId: String(id), startTime: now.toISOString(),
-      endTime: slutt.toISOString(), timeZone: "Europe/Oslo"
+      eventTypeId: String(id), start: now.toISOString(),
+      end: slutt.toISOString(), timeZone: "Europe/Oslo"
     });
-    const r = await fetch(`${CAL_BASE}/slots/available?${params}`, {
-      headers: { "Authorization": `Bearer ${key}`, "cal-api-version": "2024-08-13" }
+    const r = await fetch(`${CAL_BASE}/slots?${params}`, {
+      headers: { "Authorization": `Bearer ${key}`, "cal-api-version": "2024-09-04" }
     });
-    const data = await r.json();
-    if (data.status === "success")
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.status === "success")
       return res.json({ ok: true, id: String(id), navn: decodeURIComponent(slug || "").replace(/-/g, " "), varighet: 30 });
     return res.json({ ok: false, feil: "Kunne ikke verifisere Cal.com event type. Sjekk URL-en." });
   } catch (err) {
