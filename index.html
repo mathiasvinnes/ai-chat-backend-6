@@ -706,9 +706,16 @@
   function hentSlug() {
     const p = new URLSearchParams(window.location.search).get("salong");
     if (p) return p;
-    const vert = window.location.hostname.split(".");
-    if (vert.length > 2 && vert[0] !== "www") return vert[0];
-    return (window.SALONG_CONFIG && window.SALONG_CONFIG.slug) || "";
+    // Server-injisert config har riktig slug (fra ?salong, header eller DEFAULT_SLUG)
+    if (window.SALONG_CONFIG && window.SALONG_CONFIG.slug) return window.SALONG_CONFIG.slug;
+    // Subdomene-ruting: kun for egne domener, IKKE plattform-verter som onrender.com
+    const host = window.location.hostname;
+    const plattformVert = /(^localhost$)|(\.onrender\.com$)|(^127\.)|(\.vercel\.app$)|(\.netlify\.app$)/.test(host);
+    if (!plattformVert) {
+      const vert = host.split(".");
+      if (vert.length > 2 && vert[0] !== "www") return vert[0];
+    }
+    return "";
   }
   const SALONG_SLUG = hentSlug();
   function medSlug(sti) {
