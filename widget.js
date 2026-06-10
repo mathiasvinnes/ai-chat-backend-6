@@ -6,8 +6,12 @@
     if (window.SK_SLUG) return window.SK_SLUG;
     var p = new URLSearchParams(window.location.search).get("salong");
     if (p) return p;
-    var vert = window.location.hostname.split(".");
-    if (vert.length > 2 && vert[0] !== "www") return vert[0];
+    var host = window.location.hostname;
+    var plattformVert = /(^localhost$)|(\.onrender\.com$)|(^127\.)|(\.vercel\.app$)|(\.netlify\.app$)/.test(host);
+    if (!plattformVert) {
+      var vert = host.split(".");
+      if (vert.length > 2 && vert[0] !== "www") return vert[0];
+    }
     return "";
   }
   // Hvor serveren ligger. Embed-koden kan sette window.SK_HOST (f.eks. for ekstern
