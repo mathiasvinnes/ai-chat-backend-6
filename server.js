@@ -371,8 +371,8 @@ async function hentLedigeTider(config, onsketDag = null, onsketTid = null) {
       if (onsketTid && dagFiltrert.length > 0) {
         const match = dagFiltrert.find(t => {
           const d = new Date(t.tid);
-          const h = parseInt(d.toLocaleString("no-NO", { hour: "2-digit", timeZone: "Europe/Oslo" }));
-          const mm = d.getMinutes();
+          const h  = parseInt(d.toLocaleString("no-NO", { hour: "2-digit", hour12: false, timeZone: "Europe/Oslo" }));
+          const mm = parseInt(d.toLocaleString("no-NO", { minute: "2-digit", timeZone: "Europe/Oslo" }));
           return h === onsketTid.timer && mm === onsketTid.min;
         });
         if (match) {
