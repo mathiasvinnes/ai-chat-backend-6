@@ -1038,6 +1038,135 @@
     };
   }
 
+  // ── Avbestilling / endring av time ──────────────────────────────────────────
+  const MINE_API   = medSlug("/mine-bookinger");
+  const AVBEST_API = medSlug("/avbestill");
+  const ENDRE_API  = medSlug("/endre-tid");
+
+  function startAvbestilling() {
+    const meldinger = document.getElementById("chat-meldinger");
+    const form = document.createElement("div");
+    form.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:6px;";
+    const epostFelt = document.createElement("input");
+    epostFelt.type = "email"; epostFelt.placeholder = "E-posten du booket med";
+    epostFelt.style.cssText = "border:1px solid #ddd;border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;";
+    const finnBtn = document.createElement("button");
+    finnBtn.className = "chat-ledig-btn";
+    finnBtn.textContent = "Finn timen min";
+    finnBtn.style.cssText = "background:#b8924a;color:#fff;";
+    form.append(epostFelt, finnBtn);
+    meldinger.appendChild(form);
+    meldinger.scrollTop = 9999;
+    epostFelt.focus();
+
+    finnBtn.onclick = async () => {
+      const epost = epostFelt.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) { epostFelt.style.borderColor = "#e05"; return; }
+      finnBtn.disabled = true; finnBtn.textContent = "Henter...";
+      try {
+        const res = await fetch(MINE_API, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ epost })
+        });
+        const data = await res.json();
+        form.remove();
+        if (!res.ok || !data.ok) { leggTilMelding("bot", data.feil || "Kunne ikke hente bookinger. Prøv igjen."); return; }
+        if (!data.bookinger || data.bookinger.length === 0) {
+          leggTilMelding("bot", "Jeg fant ingen kommende timer på den e-posten. Sjekk at den stemmer, eller ring oss gjerne.");
+          return;
+        }
+        leggTilMelding("bot", "Her er timen(e) dine. Velg hva du vil gjøre:");
+        visMineBookinger(data.bookinger, epost);
+      } catch (_) {
+        form.remove();
+        leggTilMelding("bot", "Noe gikk galt. Prøv igjen om litt.");
+      }
+    };
+  }
+
+  function visMineBookinger(bookinger, epost) {
+    const meldinger = document.getElementById("chat-meldinger");
+    bookinger.forEach(b => {
+      const kort = document.createElement("div");
+      kort.style.cssText = "border:1px solid #e8e2d9;border-radius:12px;padding:14px;margin-top:8px;background:#fff;";
+      const tittel = document.createElement("div");
+      tittel.style.cssText = "font-weight:600;margin-bottom:10px;color:#1a1510;";
+      tittel.textContent = b.visning;
+      const knapper = document.createElement("div");
+      knapper.style.cssText = "display:flex;gap:8px;";
+      const avbestBtn = document.createElement("button");
+      avbestBtn.className = "chat-ledig-btn";
+      avbestBtn.textContent = "Avbestill";
+      avbestBtn.style.cssText = "flex:1;background:#fff;border:1px solid #c0392b;color:#c0392b;";
+      avbestBtn.onclick = () => bekreftAvbestilling(b, epost, kort);
+      const endreBtn = document.createElement("button");
+      endreBtn.className = "chat-ledig-btn";
+      endreBtn.textContent = "Endre tid";
+      endreBtn.style.cssText = "flex:1;background:#b8924a;color:#fff;";
+      endreBtn.onclick = () => startEndring(b, epost, kort);
+      knapper.append(avbestBtn, endreBtn);
+      kort.append(tittel, knapper);
+      meldinger.appendChild(kort);
+    });
+    meldinger.scrollTop = 9999;
+  }
+
+  async function bekreftAvbestilling(b, epost, kort) {
+    if (!confirm(`Avbestille timen ${b.visning}?`)) return;
+    kort.querySelectorAll("button").forEach(x => x.disabled = true);
+    try {
+      const res = await fetch(AVBEST_API, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingUid: b.uid, epost })
+      });
+      const data = await res.json();
+      kort.remove();
+      if (res.ok && data.ok) leggTilMelding("bot", `✅ Timen ${b.visning} er avbestilt. Velkommen tilbake en annen gang!`);
+      else leggTilMelding("bot", data.feil || "Kunne ikke avbestille. Ring oss gjerne.");
+    } catch (_) {
+      leggTilMelding("bot", "Noe gikk galt. Prøv igjen eller ring oss.");
+    }
+  }
+
+  function startEndring(b, epost, kort) {
+    kort.querySelectorAll("button").forEach(x => x.disabled = true);
+    leggTilMelding("bot", "Hvilken dag vil du flytte timen til? Skriv f.eks. «fredag» eller «22. juni», så henter jeg ledige tider.");
+    // Sett opp en engangslytter: neste melding tolkes som ønsket ny dag
+    venterPaEndring = { uid: b.uid, epost, gammelVisning: b.visning };
+  }
+
+  // Tilstand for pågående endring (sett av startEndring, brukt i sendMelding)
+  let venterPaEndring = null;
+
+  function visEndreTider(tider, endring) {
+    const meldinger = document.getElementById("chat-meldinger");
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+    tider.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "chat-ledig-btn";
+      btn.textContent = t.visning;
+      btn.onclick = async () => {
+        wrap.querySelectorAll("button").forEach(x => { x.disabled = true; x.style.opacity = "0.4"; });
+        try {
+          const res = await fetch(ENDRE_API, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingUid: endring.uid, nyTid: t.tid, epost: endring.epost })
+          });
+          const data = await res.json();
+          wrap.remove();
+          if (res.ok && data.ok) leggTilMelding("bot", `✅ Timen er flyttet til ${t.visning}. Vi sees! 🎉`);
+          else leggTilMelding("bot", data.feil || "Kunne ikke endre tidspunkt. Ring oss gjerne.");
+        } catch (_) {
+          leggTilMelding("bot", "Noe gikk galt. Prøv igjen eller ring oss.");
+        }
+      };
+      wrap.appendChild(btn);
+    });
+    meldinger.appendChild(wrap);
+    meldinger.scrollTop = 9999;
+  }
+
   // Vekk serveren ved sidelast – slik at første chat ikke feiler
   let serverOppe = false;
   fetch(medSlug("/health")).then(r => r.ok && (serverOppe = true)).catch(() => {});
@@ -1064,6 +1193,39 @@
     if (sendBtn) sendBtn.disabled = true;
     input.value = "";
     leggTilMelding("user", msg);
+
+    // Hvis kunden er i ferd med å endre en time: tolk meldingen som ønsket ny dag
+    if (venterPaEndring) {
+      const endring = venterPaEndring;
+      venterPaEndring = null;
+      const typW = leggTilMelding("bot", "");
+      const tp = document.createElement("div");
+      tp.className = "typing-dot"; tp.innerHTML = "<span></span><span></span><span></span>";
+      typW.querySelector(".chat-boble").appendChild(tp);
+      try {
+        const res = await fetch(medSlug("/chat"), {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: "ledige tider " + msg, history: [] })
+        });
+        const data = await res.json();
+        typW.remove();
+        if (data.ledigeTider && data.ledigeTider.length > 0) {
+          leggTilMelding("bot", "Velg en ny tid:");
+          visEndreTider(data.ledigeTider, endring);
+        } else {
+          leggTilMelding("bot", "Fant ingen ledige tider den dagen. Prøv en annen dag, eller ring oss.");
+        }
+      } catch (_) {
+        typW.remove();
+        leggTilMelding("bot", "Noe gikk galt. Prøv igjen om litt.");
+      } finally {
+        input.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        input.focus();
+      }
+      return;
+    }
+
     chatHistory.push({ role: "user", content: msg });
 
     // Typing-indikator
@@ -1107,6 +1269,8 @@
       else if (Array.isArray(data.ledigeTider) && data.ledigeTider.length === 0) {
         leggTilMelding("bot", "Ingen ledige tider den dagen. Vil du prøve en annen dag?");
       }
+
+      if (data.visAvbestilling) startAvbestilling();
 
       if (chatHistory.length > 16) chatHistory = chatHistory.slice(-16);
 
