@@ -72,9 +72,14 @@ async function hentTenant(slug) {
   const cached = tenantCache.get(renSlug);
   if (cached && Date.now() - cached.hentet < TENANT_TTL) return cached.config;
 
-  // Lokal demo-slug: bruk config.json
+  // Lokal demo-slug: bruk config.json + Cal-felter fra miljøvariabler
   if (renSlug === normaliserSlug(DEFAULT_SLUG) && LOKAL_CONFIG) {
-    const config = { ...LOKAL_CONFIG, slug: renSlug };
+    const config = {
+      ...LOKAL_CONFIG,
+      slug: renSlug,
+      calApiKey: LOKAL_CONFIG.calApiKey || process.env.CAL_API_KEY || "",
+      calEventId: Number(LOKAL_CONFIG.calEventId || process.env.CAL_EVENT_TYPE_ID || 0)
+    };
     tenantCache.set(renSlug, { config, hentet: Date.now() });
     return config;
   }
@@ -82,7 +87,12 @@ async function hentTenant(slug) {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     // Ingen database: kun lokal config tilgjengelig
     if (LOKAL_CONFIG) {
-      const config = { ...LOKAL_CONFIG, slug: renSlug };
+      const config = {
+        ...LOKAL_CONFIG,
+        slug: renSlug,
+        calApiKey: LOKAL_CONFIG.calApiKey || process.env.CAL_API_KEY || "",
+        calEventId: Number(LOKAL_CONFIG.calEventId || process.env.CAL_EVENT_TYPE_ID || 0)
+      };
       return config;
     }
     return null;
