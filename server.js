@@ -299,6 +299,44 @@ function parseDagFraMelding(melding) {
   if (/\bi morgen\b|\bimorgen\b/.test(lower)) {
     const d = new Date(); d.setDate(d.getDate() + 1); return d;
   }
+
+  const naa = new Date();
+  const iAar = naa.getFullYear();
+  const maaneder = {
+    januar:0, februar:1, mars:2, april:3, mai:4, juni:5, juli:6,
+    august:7, september:8, oktober:9, november:10, desember:11
+  };
+
+  // "22. juni" / "22 juni" / "1. mai"
+  const datoMnd = lower.match(/\b(\d{1,2})\.?\s+(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)\b/);
+  if (datoMnd) {
+    const dag = parseInt(datoMnd[1]);
+    const mnd = maaneder[datoMnd[2]];
+    if (dag >= 1 && dag <= 31) {
+      let aar = iAar;
+      // Hvis datoen allerede er passert i år, anta neste år
+      const kandidat = new Date(aar, mnd, dag);
+      if (kandidat < new Date(naa.getFullYear(), naa.getMonth(), naa.getDate())) aar += 1;
+      return new Date(aar, mnd, dag);
+    }
+  }
+
+  // "22.06" / "22/6" / "22.6.2026" (dag.måned, evt. år)
+  const datoTall = lower.match(/\b(\d{1,2})[.\/](\d{1,2})(?:[.\/](\d{2,4}))?\b/);
+  if (datoTall) {
+    const dag = parseInt(datoTall[1]);
+    const mnd = parseInt(datoTall[2]) - 1;
+    let aar = datoTall[3] ? parseInt(datoTall[3]) : iAar;
+    if (aar < 100) aar += 2000;
+    if (dag >= 1 && dag <= 31 && mnd >= 0 && mnd <= 11) {
+      const kandidat = new Date(aar, mnd, dag);
+      if (!datoTall[3] && kandidat < new Date(naa.getFullYear(), naa.getMonth(), naa.getDate())) {
+        return new Date(aar + 1, mnd, dag);
+      }
+      return kandidat;
+    }
+  }
+
   const nesteUke = /neste uke|neste uken/.test(lower);
   const dagMap = { mandag:1, tirsdag:2, onsdag:3, torsdag:4, fredag:5, lordag:6, "lørdag":6, sondag:0, "søndag":0 };
   for (const [navn, nr] of Object.entries(dagMap)) {
@@ -325,6 +363,14 @@ async function hentLedigeTider(config, onsketDag = null, onsketTid = null) {
     const now   = new Date(Date.now() + 5 * 60 * 1000);
     const slutt = new Date(now);
     slutt.setDate(slutt.getDate() + 14);
+    // Hvis kunden ber om en konkret dato lenger frem enn 14 dager, utvid vinduet
+    // (men maks ~60 dager for å unngå unødig store svar)
+    if (onsketDag) {
+      const onsketSlutt = new Date(onsketDag);
+      onsketSlutt.setDate(onsketSlutt.getDate() + 1);
+      const maks = new Date(now); maks.setDate(maks.getDate() + 60);
+      if (onsketSlutt > slutt) slutt.setTime(Math.min(onsketSlutt.getTime(), maks.getTime()));
+    }
 
     // Cal.com v2 /slots: bruk start/end og cal-api-version 2024-09-04
     const params = new URLSearchParams({
