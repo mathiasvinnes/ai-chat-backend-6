@@ -236,6 +236,15 @@ REGLER FOR [BOOK]-TAG:
 - Skriv ALDRI at du ikke har tilgang til kalenderen.
 - Skriv ALDRI at du har booket - kunden ma klikke selv.
 
+REGLER FOR [AVBESTILL]-TAG:
+- Avslutt med [AVBESTILL] pa en HELT EGEN LINJE nar kunden vil avbestille, kansellere, endre eller flytte en eksisterende time.
+- Eksempler der du SKAL bruke [AVBESTILL]:
+  * "jeg ma avbestille timen min" -> "Det ordner vi! La meg finne bookingen din.\n[AVBESTILL]"
+  * "kan jeg flytte timen til en annen dag?" -> "Klart! La meg hente timen din.\n[AVBESTILL]"
+  * "jeg vil kansellere" -> "Jeg hjelper deg. La meg finne bookingen din.\n[AVBESTILL]"
+- Ikke bruk [AVBESTILL] for nye bookinger - da bruker du [BOOK].
+- Skriv ALDRI at du har avbestilt eller endret - kunden ma bekrefte selv i skjemaet.
+
 Kontaktinformasjon:
 - Adresse: ${config.adresse || "Ikke oppgitt"}
 - Telefon: ${config.telefon || "Ikke oppgitt"}
@@ -495,6 +504,107 @@ async function opprettBooking(config, { navn, epost, tid }) {
   }
 }
 
+// Hent en kundes kommende bookinger basert på e-post
+async function hentMineBookinger(config, epost) {
+  const apiKey = config.calApiKey;
+  if (!apiKey) return null;
+  try {
+    const params = new URLSearchParams({
+      attendeeEmail: epost,
+      status: "upcoming",
+      sortStart: "asc"
+    });
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(`${CAL_BASE}/bookings?${params}`, {
+      headers: { "Authorization": `Bearer ${apiKey}`, "cal-api-version": "2024-08-13" },
+      signal: ctrl.signal
+    });
+    clearTimeout(timeout);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.status !== "success") {
+      console.error(`[CAL] ${config.slug} hentMineBookinger feilet (HTTP ${res.status}):`, JSON.stringify(data).slice(0, 300));
+      return null;
+    }
+    const liste = Array.isArray(data.data) ? data.data : [];
+    // Kun fremtidige, ikke avbestilte
+    return liste
+      .filter(b => b.start && new Date(b.start) > new Date() && b.status !== "cancelled")
+      .map(b => ({
+        uid: b.uid,
+        tid: b.start,
+        visning: new Date(b.start).toLocaleString("no-NO", {
+          weekday: "long", day: "numeric", month: "long",
+          hour: "2-digit", minute: "2-digit", timeZone: "Europe/Oslo"
+        }),
+        tittel: b.eventType?.slug || b.title || "Time"
+      }));
+  } catch (err) {
+    console.error(`[FEIL] hentMineBookinger (${config.slug}):`, err.message);
+    return null;
+  }
+}
+
+// Avbestill en booking
+async function avbestillBooking(config, bookingUid, grunn = "Avbestilt av kunde via chat") {
+  const apiKey = config.calApiKey;
+  if (!apiKey) return { ok: false, feil: "Booking er ikke konfigurert." };
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch(`${CAL_BASE}/bookings/${encodeURIComponent(bookingUid)}/cancel`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "cal-api-version": "2024-08-13",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ cancellationReason: grunn }),
+      signal: ctrl.signal
+    });
+    clearTimeout(timeout);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.status !== "success") {
+      console.error(`[CAL] ${config.slug} avbestilling feilet (HTTP ${res.status}):`, JSON.stringify(data).slice(0, 300));
+      return { ok: false, feil: data.error?.message || "Kunne ikke avbestille." };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error(`[FEIL] avbestillBooking (${config.slug}):`, err.message);
+    return { ok: false, feil: err.message };
+  }
+}
+
+// Endre tidspunkt på en booking
+async function endreBooking(config, bookingUid, nyTid, grunn = "Endret av kunde via chat") {
+  const apiKey = config.calApiKey;
+  if (!apiKey) return { ok: false, feil: "Booking er ikke konfigurert." };
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch(`${CAL_BASE}/bookings/${encodeURIComponent(bookingUid)}/reschedule`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "cal-api-version": "2024-08-13",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ start: nyTid, reschedulingReason: grunn }),
+      signal: ctrl.signal
+    });
+    clearTimeout(timeout);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.status !== "success") {
+      console.error(`[CAL] ${config.slug} endring feilet (HTTP ${res.status}):`, JSON.stringify(data).slice(0, 300));
+      return { ok: false, feil: data.error?.message || "Kunne ikke endre tidspunkt." };
+    }
+    return { ok: true, booking: data.data };
+  } catch (err) {
+    console.error(`[FEIL] endreBooking (${config.slug}):`, err.message);
+    return { ok: false, feil: err.message };
+  }
+}
+
 // ── SendGrid ──────────────────────────────────────────────────────────────────
 function escapeHtml(str) {
   return String(str ?? "")
@@ -714,7 +824,8 @@ app.post("/chat", corsPublic, rateLimitChat, krevTenant, async (req, res) => {
     }
 
     const hasBookTag = rawReply.includes("[BOOK]");
-    const reply = rawReply.replace(/\[BOOK\]/g, "").trim();
+    const hasAvbestillTag = rawReply.includes("[AVBESTILL]");
+    const reply = rawReply.replace(/\[BOOK\]/g, "").replace(/\[AVBESTILL\]/g, "").trim();
 
     // Navnedeteksjon: krev eksplisitt introduksjon eller for-/etternavn (2 ord)
     let detektertNavn = null;
@@ -758,7 +869,7 @@ app.post("/chat", corsPublic, rateLimitChat, krevTenant, async (req, res) => {
     }).catch(() => {});
     if (bookingUrl) sendBookingVarsel(config, { navn: safeName, melding: message }).catch(() => {});
 
-    return res.json({ reply, bookingUrl, ledigeTider, detektertNavn });
+    return res.json({ reply, bookingUrl, ledigeTider, detektertNavn, visAvbestilling: hasAvbestillTag });
   } catch (err) {
     console.error("[FEIL] /chat:", err.message);
     return res.status(500).json({ reply: "Serverfeil. Prov igjen senere." });
@@ -797,6 +908,67 @@ app.post("/book", corsPublic, rateLimitBook, krevTenant, async (req, res) => {
   ).catch(() => {});
   const bookingUid = resultat.booking?.uid || resultat.booking?.id || null;
   return res.json({ ok: true, bookingUid });
+});
+
+// ── /mine-bookinger – hent kundens kommende bookinger via e-post ────────────────
+app.post("/mine-bookinger", corsPublic, rateLimitBook, krevTenant, async (req, res) => {
+  const { epost } = req.body;
+  if (!epost || typeof epost !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost))
+    return res.status(400).json({ ok: false, feil: "Ugyldig e-postadresse." });
+  const bookinger = await hentMineBookinger(req.tenant, epost.slice(0, 200));
+  if (bookinger === null)
+    return res.status(502).json({ ok: false, feil: "Kunne ikke hente bookinger akkurat nå." });
+  return res.json({ ok: true, bookinger });
+});
+
+// ── /avbestill – avbestill en booking ───────────────────────────────────────────
+app.post("/avbestill", corsPublic, rateLimitBook, krevTenant, async (req, res) => {
+  const { bookingUid, epost } = req.body;
+  if (!bookingUid || typeof bookingUid !== "string")
+    return res.status(400).json({ ok: false, feil: "Mangler booking-referanse." });
+  if (!epost || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost))
+    return res.status(400).json({ ok: false, feil: "Ugyldig e-postadresse." });
+
+  // Verifiser at bookingen faktisk tilhører denne e-posten (hindrer at noen avbestiller andres time)
+  const mine = await hentMineBookinger(req.tenant, epost.slice(0, 200));
+  if (!mine || !mine.some(b => b.uid === bookingUid))
+    return res.status(403).json({ ok: false, feil: "Fant ingen booking med den referansen på din e-post." });
+
+  const r = await avbestillBooking(req.tenant, bookingUid);
+  if (!r.ok) return res.status(502).json({ ok: false, feil: r.feil });
+
+  sendTelegram(
+    `❌ <b>Avbestilling hos ${escapeHtml(req.tenant.bedrift)}</b>\n${escapeHtml(epost)}`
+  ).catch(() => {});
+  return res.json({ ok: true });
+});
+
+// ── /endre-tid – flytt en booking til nytt tidspunkt ────────────────────────────
+app.post("/endre-tid", corsPublic, rateLimitBook, krevTenant, async (req, res) => {
+  const { bookingUid, nyTid, epost } = req.body;
+  if (!bookingUid || typeof bookingUid !== "string")
+    return res.status(400).json({ ok: false, feil: "Mangler booking-referanse." });
+  if (!nyTid || typeof nyTid !== "string")
+    return res.status(400).json({ ok: false, feil: "Mangler nytt tidspunkt." });
+  if (!epost || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost))
+    return res.status(400).json({ ok: false, feil: "Ugyldig e-postadresse." });
+  const tidDato = new Date(nyTid);
+  if (isNaN(tidDato.getTime()) || tidDato < new Date(Date.now() - 30_000))
+    return res.status(400).json({ ok: false, feil: "Ugyldig eller passert tidspunkt." });
+
+  // Verifiser eierskap
+  const mine = await hentMineBookinger(req.tenant, epost.slice(0, 200));
+  if (!mine || !mine.some(b => b.uid === bookingUid))
+    return res.status(403).json({ ok: false, feil: "Fant ingen booking med den referansen på din e-post." });
+
+  const r = await endreBooking(req.tenant, bookingUid, nyTid);
+  if (!r.ok) return res.status(502).json({ ok: false, feil: r.feil });
+
+  sendTelegram(
+    `🔄 <b>Endret time hos ${escapeHtml(req.tenant.bedrift)}</b>\n` +
+    `${escapeHtml(epost)}\nNy tid: ${escapeHtml(tidDato.toLocaleString("no-NO", { timeZone: "Europe/Oslo" }))}`
+  ).catch(() => {});
+  return res.json({ ok: true, nyBookingUid: r.booking?.uid || bookingUid });
 });
 
 // ── Cal.com event-lookup (brukt av onboarding) ─────────────────────────────────
