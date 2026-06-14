@@ -156,6 +156,25 @@
   <div id="steg-1" class="kort">
     <div class="kort-tittel">Fortell oss om salongen</div>
     <div class="kort-sub">Denne informasjonen brukes av AI-assistenten og vises på nettsiden din.</div>
+
+    <div class="felt-gruppe full" style="margin-bottom:24px;">
+      <label class="felt-label">Velg pakke *</label>
+      <div id="pakke-valg" style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px;">
+        <div class="pakke-kort" data-pakke="chatbot" onclick="velgPakke(this)" style="border:2px solid var(--cream-3);border-radius:10px;padding:16px;cursor:pointer;transition:border-color 0.2s;">
+          <div style="font-weight:600;font-size:15px;">Chatbot</div>
+          <div style="font-size:13px;color:var(--ink-3);margin-top:4px;">AI-assistent og booking på din eksisterende nettside. 690 kr/mnd.</div>
+        </div>
+        <div class="pakke-kort valgt" data-pakke="komplett" onclick="velgPakke(this)" style="border:2px solid var(--gold);border-radius:10px;padding:16px;cursor:pointer;transition:border-color 0.2s;">
+          <div style="font-weight:600;font-size:15px;">Komplett <span style="font-size:11px;background:var(--gold);color:#fff;padding:2px 8px;border-radius:999px;margin-left:6px;">Mest populær</span></div>
+          <div style="font-size:13px;color:var(--ink-3);margin-top:4px;">Komplett nettside, chatbot, booking og statistikk. 1 490 kr/mnd.</div>
+        </div>
+        <div class="pakke-kort" data-pakke="kjede" onclick="velgPakke(this)" style="border:2px solid var(--cream-3);border-radius:10px;padding:16px;cursor:pointer;transition:border-color 0.2s;">
+          <div style="font-weight:600;font-size:15px;">Flere lokasjoner</div>
+          <div style="font-size:13px;color:var(--ink-3);margin-top:4px;">Alt i Komplett, for flere avdelinger med samlet oversikt. Fra 1 290 kr/mnd per lokasjon.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="felt-grid">
       <div class="felt-gruppe full">
         <label class="felt-label">Salongens navn *</label>
@@ -594,6 +613,17 @@
   // ── FARGE ────────────────────────────────────────────────────────────────────
   let valgtFarge      = "#b8924a";
   let valgtBakgrunn   = "#f5f0e8";
+  let valgtPakke      = "komplett";
+
+  function velgPakke(el) {
+    document.querySelectorAll("#pakke-valg .pakke-kort").forEach(k => {
+      k.classList.remove("valgt");
+      k.style.borderColor = "var(--cream-3)";
+    });
+    el.classList.add("valgt");
+    el.style.borderColor = "var(--gold)";
+    valgtPakke = el.dataset.pakke;
+  }
 
   function velgFargeEl(el) {
     document.querySelectorAll("#farge-grid .farge-alternativ").forEach(f => f.classList.remove("valgt"));
@@ -880,6 +910,7 @@
       sprakOgLand:  "norsk",
       farge:        valgtFarge,
       sekundarfarge: valgtSekundar,
+      pakke:        valgtPakke,
       bakgrunn:     valgtBakgrunn,
       beskrivelse:  document.getElementById("beskrivelse").value.trim(),
       erfaringAar:  document.getElementById("erfaringAar").value.trim(),
