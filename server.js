@@ -77,6 +77,7 @@ async function hentTenant(slug) {
     const config = {
       ...LOKAL_CONFIG,
       slug: renSlug,
+      pakke: LOKAL_CONFIG.pakke || "komplett",
       calApiKey: LOKAL_CONFIG.calApiKey || process.env.CAL_API_KEY || "",
       calEventId: Number(LOKAL_CONFIG.calEventId || process.env.CAL_EVENT_TYPE_ID || 0)
     };
@@ -90,6 +91,7 @@ async function hentTenant(slug) {
       const config = {
         ...LOKAL_CONFIG,
         slug: renSlug,
+        pakke: LOKAL_CONFIG.pakke || "komplett",
         calApiKey: LOKAL_CONFIG.calApiKey || process.env.CAL_API_KEY || "",
         calEventId: Number(LOKAL_CONFIG.calEventId || process.env.CAL_EVENT_TYPE_ID || 0)
       };
@@ -153,6 +155,7 @@ function radTilConfig(rad) {
     priser:       base.priser       || [],
     apningstider: base.apningstider || {},
     faq:          base.faq          || {},
+    pakke:        rad.pakke         || base.pakke || "komplett",
     farge:        base.farge        || "#b8924a",
     sekundarfarge: base.sekundarfarge || "#8a6a2a",
     bakgrunn:     base.bakgrunn     || "#f5f0e8",
@@ -732,6 +735,12 @@ const rateLimitOpp  = lagRateLimit(10, "opp:");   // bildeopplasting
 // index.html får injisert riktig salong-config server-side.
 app.get("/", corsPublic, krevTenant, (req, res) => {
   try {
+    // Chatbot-pakken har ikke egen nettside hos oss – de bruker widgeten på sin
+    // egen side. Sender dem til den frittstående chat-siden i stedet for malen.
+    if (req.tenant.pakke === "chatbot") {
+      const skille = req.tenantSlug ? `?salong=${encodeURIComponent(req.tenantSlug)}` : "";
+      return res.redirect(302, `/chat${skille}`);
+    }
     let html = readFileSync(path.join(__dirname, "index.html"), "utf-8");
     const offentlig = offentligConfig(req.tenant);
     const configScript = `<script>window.SALONG_CONFIG = ${JSON.stringify(offentlig)};</script>`;
@@ -760,7 +769,7 @@ function offentligConfig(c) {
     velkomst: c.velkomst, adresse: c.adresse, telefon: c.telefon, epost: c.epost,
     bookinglink: c.bookinglink, tjenester: c.tjenester, priser: c.priser,
     apningstider: c.apningstider, farge: c.farge, bakgrunn: c.bakgrunn,
-    sekundarfarge: c.sekundarfarge,
+    sekundarfarge: c.sekundarfarge, pakke: c.pakke,
     usp: c.usp, produkter: c.produkter, erfaringAar: c.erfaringAar,
     ansatte: c.ansatte, kunder: c.kunder, bildeHero: c.bildeHero, bildeOm: c.bildeOm
   };
@@ -1012,7 +1021,7 @@ app.post("/dashboard-data", corsPublic, rateLimitDash, async (req, res) => {
       filter = `config->>epost=eq.${encodeURIComponent(epost)}`;
     }
     const kundeRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/salonger?${filter}&select=slug,bedrift`,
+      `${SUPABASE_URL}/rest/v1/salonger?${filter}&select=slug,bedrift,pakke`,
       { headers: supaHeaders() }
     );
     const kunder = await kundeRes.json();
@@ -1024,7 +1033,7 @@ app.post("/dashboard-data", corsPublic, rateLimitDash, async (req, res) => {
       { headers: supaHeaders() }
     );
     const samtaler = await samtaleRes.json();
-    return res.json({ bedrift: kunde.bedrift, slug: kunde.slug, samtaler: Array.isArray(samtaler) ? samtaler : [] });
+    return res.json({ bedrift: kunde.bedrift, slug: kunde.slug, pakke: kunde.pakke || "komplett", samtaler: Array.isArray(samtaler) ? samtaler : [] });
   } catch (err) {
     console.error("[FEIL] dashboard-data:", err.message);
     return res.status(500).json({ error: "Serverfeil. Prøv igjen." });
@@ -1208,6 +1217,7 @@ app.post("/provision", corsPublic, rateLimitProv, krevAdminToken, async (req, re
     priser: konfig.priser || [], apningstider: konfig.apningstider || {},
     farge: konfig.farge || "#b8924a", bakgrunn: konfig.bakgrunn || "#f5f0e8",
     sekundarfarge: konfig.sekundarfarge || "#8a6a2a",
+    pakke: konfig.pakke || "komplett",
     beskrivelse: konfig.beskrivelse || "", usp: konfig.usp || [],
     produkter: konfig.produkter || "", erfaringAar: konfig.erfaringAar || "",
     ansatte: konfig.ansatte || "", kunder: konfig.kunder || "",
@@ -1224,6 +1234,7 @@ app.post("/provision", corsPublic, rateLimitProv, krevAdminToken, async (req, re
 
   const rad = {
     slug, bedrift: konfig.bedrift, nokkel, aktiv: true,
+    pakke: konfig.pakke || "komplett",
     cal_event_id: Number(konfig.calEventId || process.env.CAL_EVENT_TYPE_ID || 0),
     cal_api_key: konfig.calApiKey || process.env.CAL_API_KEY || "",
     config
