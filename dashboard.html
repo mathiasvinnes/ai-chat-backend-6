@@ -230,6 +230,8 @@
       <div class="stat-card"><div class="stat-label">Konverteringsrate</div><div class="stat-value gold" id="stat-rate">–</div></div>
     </div>
 
+    <!-- Avansert statistikk (kun Komplett/Kjede). Skjules for chatbot-pakken. -->
+    <div id="avansert-statistikk">
     <!-- Rad 1: Donut + Timediagram side om side -->
     <!-- Donut gir øyeblikkelig oversikt over konvertering, timediagram viser NÅR kundene er aktive -->
     <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px;">
@@ -285,6 +287,7 @@
         </div>
       </div>
     </div>
+    </div><!-- /avansert-statistikk -->
 
     <div class="toolbar">
       <input class="filter-input" id="sok" placeholder="Søk i meldinger, navn..." type="text" />
@@ -486,12 +489,20 @@
       const payload = await res.json();
       const data = payload.samtaler || [];
       AKTIV_SLUG = payload.slug || null;
+      const pakke = payload.pakke || "komplett";
       const bedrift = payload.bedrift || user.email;
       document.getElementById("topbar-bedrift").textContent = bedrift;
       document.getElementById("page-sub").textContent = `Samtaler for ${bedrift}`;
       alleRader = data;
       oppdaterStats(data);
-      tegnDiagram(data);
+      // Avansert statistikk (diagrammer) kun for Komplett/Kjede – ikke Chatbot-pakken
+      const avansert = document.getElementById("avansert-statistikk");
+      if (pakke === "chatbot") {
+        if (avansert) avansert.style.display = "none";
+      } else {
+        if (avansert) avansert.style.display = "";
+        tegnDiagram(data);
+      }
       filtrer();
     } catch (err) {
       samtaleListe.innerHTML = `<div class="empty" style="color:var(--red)">Feil: ${esc(err.message)}</div>`;
